@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function for checking valid document IDs
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Connectivity test collection
+    match /test/{testId} {
+      allow read, write: if true;
+    }
+
+    // Orders Collection (Dual persistence for laundry orders)
+    match /orders/{orderId} {
+      allow read, write: if isValidId(orderId);
+      allow list: if true;
+    }
+
+    // Order Items Collection
+    match /order_items/{itemId} {
+      allow read, write: if isValidId(itemId);
+      allow list: if true;
+    }
+
+    // Customers Collection
+    match /customers/{customerId} {
+      allow read, write: if isValidId(customerId);
+      allow list: if true;
+    }
+
+    // Invoices Collection
+    match /invoices/{invoiceId} {
+      allow read, write: if isValidId(invoiceId);
+      allow list: if true;
+    }
+
+    // Shops Collection
+    match /shops/{shopId} {
+      allow read, write: if isValidId(shopId);
+      allow list: if true;
+    }
+
+    // Delivery Boys Collection
+    match /delivery_boys/{boyId} {
+      allow read, write: if isValidId(boyId);
+      allow list: if true;
+    }
+
+    // Clothing Categories Collection
+    match /clothing_categories/{categoryId} {
+      allow read, write: if isValidId(categoryId);
+      allow list: if true;
+    }
+
+    // Payments Collection
+    match /payments/{paymentId} {
+      allow read, write: if isValidId(paymentId);
+      allow list: if true;
+    }
+
+    // App Settings / Sync Meta
+    match /app_settings/{settingId} {
+      allow read, write: if isValidId(settingId);
+      allow list: if true;
+    }
+
+    // Default deny for unmatched documents
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

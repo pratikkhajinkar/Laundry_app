@@ -1,0 +1,6 @@
+{
+  "name": "Friends Laundry & Dry Cleaners",
+  "description": "Professional mobile-first laundry pickup, delivery, automatic billing, WhatsApp invoice sharing, due payment collections, and shop cash settlements for Friends Laundry & Dry Cleaners.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

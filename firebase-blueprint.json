@@ -1,0 +1,89 @@
+{
+  "entities": {
+    "Order": {
+      "title": "Order",
+      "description": "Laundry and dry cleaning order record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique order identifier" },
+        "order_number": { "type": "string", "description": "Formatted order number e.g. ORD-2026-0001" },
+        "customer_name": { "type": "string", "description": "Name of the customer" },
+        "customer_mobile": { "type": "string", "description": "Mobile contact number of the customer" },
+        "shop_name": { "type": "string", "description": "Branch shop name" },
+        "status": { "type": "string", "description": "Current order progress status" },
+        "order_type": { "type": "string", "description": "Type of order: pickup or delivery" },
+        "final_total": { "type": "number", "description": "Final bill amount" },
+        "amount_paid": { "type": "number", "description": "Amount paid so far" },
+        "outstanding_amount": { "type": "number", "description": "Pending outstanding balance" },
+        "created_at": { "type": "string", "description": "Creation timestamp ISO string" }
+      },
+      "required": ["id", "order_number", "customer_name", "customer_mobile", "final_total", "created_at"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Registered laundry customer details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique customer ID" },
+        "name": { "type": "string", "description": "Customer full name" },
+        "mobile": { "type": "string", "description": "Customer mobile phone number" },
+        "area": { "type": "string", "description": "Service area" },
+        "pickup_address": { "type": "string", "description": "Pickup street address" },
+        "created_at": { "type": "string", "description": "Creation timestamp ISO string" }
+      },
+      "required": ["id", "name", "mobile", "pickup_address"]
+    },
+    "Shop": {
+      "title": "Shop",
+      "description": "Friends Laundry & Dry Cleaners branch details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Unique shop ID" },
+        "name": { "type": "string", "description": "Branch shop name" },
+        "code": { "type": "string", "description": "Branch code e.g. FLD-WARJE" },
+        "phone": { "type": "string", "description": "Shop phone number" },
+        "address": { "type": "string", "description": "Shop physical address" }
+      },
+      "required": ["id", "name", "code", "phone", "address"]
+    },
+    "TestConnection": {
+      "title": "TestConnection",
+      "description": "Document for initial server connection healthcheck",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "description": "Status message" },
+        "timestamp": { "type": "string", "description": "Timestamp" }
+      }
+    }
+  },
+  "firestore": {
+    "/orders/{orderId}": {
+      "schema": { "$ref": "#/entities/Order" },
+      "description": "Collection of laundry orders"
+    },
+    "/customers/{customerId}": {
+      "schema": { "$ref": "#/entities/Customer" },
+      "description": "Collection of customer records"
+    },
+    "/shops/{shopId}": {
+      "schema": { "$ref": "#/entities/Shop" },
+      "description": "Collection of official shop branches"
+    },
+    "/delivery_boys/{boyId}": {
+      "schema": { "type": "object" },
+      "description": "Collection of delivery personnel accounts"
+    },
+    "/clothing_categories/{categoryId}": {
+      "schema": { "type": "object" },
+      "description": "Collection of clothing items and rate cards"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "type": "object" },
+      "description": "Collection of recorded payment transactions"
+    },
+    "/test/{testId}": {
+      "schema": { "$ref": "#/entities/TestConnection" },
+      "description": "Collection for connectivity verification"
+    }
+  }
+}
