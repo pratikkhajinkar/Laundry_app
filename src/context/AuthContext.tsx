@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import type { User, UserRole } from '../types/index.ts';
+import type { User, UserRole, Shop } from '../types/index.ts';
 import { translations, type Language } from '../translations/index.ts';
 
 interface SetupStatus {
@@ -18,6 +18,10 @@ interface AuthContextType {
   t: (key: keyof typeof translations['en']) => string;
   setupStatus: SetupStatus | null;
   isCheckingSetup: boolean;
+  activeShopId: string | null;
+  setActiveShopId: (shopId: string) => void;
+  shops: Shop[];
+  refreshShops: () => Promise<Shop[]>;
   login: (emailOrPhone: string, password: string, role?: UserRole) => Promise<void>;
   logout: () => Promise<void>;
   initializeSystem: (payload: { adminName: string; emailOrPhone: string; password: string; includeDefaultConfig: boolean }) => Promise<void>;
@@ -37,6 +41,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [setupStatus, setSetupStatus] = useState<SetupStatus | null>(null);
   const [isCheckingSetup, setIsCheckingSetup] = useState<boolean>(true);
+  const [shops, setShops] = useState<Shop[]>([]);
+  const [activeShopId, setActiveShopIdState] = useState<string | null>(() => {
+    return localStorage.getItem('friends_laundry_active_shop_id') || null;
+  });
+
+  const setActiveShopId = useCallback((shopId: string) => {
+    setActiveShopIdState(shopId);
+    if (shopId) {
+      localStorage.setItem('friends_laundry_active_shop_id', shopId);
+    } else {
+      localStorage.removeItem('friends_laundry_active_shop_id');
+    }
+  }, []);
 
   const setLanguage = (lang: Language) => {
     setLanguageState('en');
@@ -86,6 +103,47 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [token]);
 
+  const refreshShops = useCallback(async (): Promise<Shop[]> => {
+    if (!token) {
+      setShops([]);
+      return [];
+    }
+    try {
+      const res = await fetch('/api/shops', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const list: Shop[] = data.shops || [];
+        setShops(list);
+
+        setActiveShopIdState((current) => {
+          if (user?.role === 'shop' && user.shop_id) {
+            localStorage.setItem('friends_laundry_active_shop_id', user.shop_id);
+            return user.shop_id;
+          }
+          if (current && list.some(s => s.id === current)) {
+            return current;
+          }
+          const stored = localStorage.getItem('friends_laundry_active_shop_id');
+          if (stored && list.some(s => s.id === stored)) {
+            return stored;
+          }
+          if (list.length > 0) {
+            localStorage.setItem('friends_laundry_active_shop_id', list[0].id);
+            return list[0].id;
+          }
+          return null;
+        });
+
+        return list;
+      }
+    } catch (err) {
+      console.error('Error fetching shops:', err);
+    }
+    return [];
+  }, [token, user?.role, user?.shop_id]);
+
   useEffect(() => {
     checkSetupStatus();
   }, [checkSetupStatus]);
@@ -93,8 +151,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (token) {
       refreshUser();
+      refreshShops();
+    } else {
+      setShops([]);
     }
-  }, [token, refreshUser]);
+  }, [token, refreshUser, refreshShops]);
 
   // Real-time heartbeat loop: pings every 25s when user is active to maintain live online status
   useEffect(() => {
@@ -189,6 +250,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         t,
         setupStatus,
         isCheckingSetup,
+        activeShopId,
+        setActiveShopId,
+        shops,
+        refreshShops,
         login,
         logout,
         initializeSystem,

@@ -47,7 +47,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
   onSuccess,
   initialMode = 'pickup'
 }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeShopId } = useAuth();
   const [orderType, setOrderType] = useState<'pickup' | 'delivery'>(initialMode);
   
   const [shops, setShops] = useState<Shop[]>([]);
@@ -60,7 +60,7 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
   const [loadingOldDue, setLoadingOldDue] = useState<boolean>(false);
 
   // Form fields
-  const [shopId, setShopId] = useState(user?.role === 'shop' ? (user.shop_id || '') : '');
+  const [shopId, setShopId] = useState(user?.role === 'shop' ? (user.shop_id || '') : (activeShopId || ''));
   const [customerName, setCustomerName] = useState('');
   const [customerMobile, setCustomerMobile] = useState('');
   const [pickupAddress, setPickupAddress] = useState('');

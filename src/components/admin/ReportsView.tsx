@@ -13,15 +13,22 @@ import {
 } from 'lucide-react';
 
 export const ReportsView: React.FC = () => {
-  const { token, user, t } = useAuth();
+  const { token, user, t, activeShopId, setActiveShopId, shops } = useAuth();
   const [reportType, setReportType] = useState<'orders' | 'due_payments' | 'collections' | 'settlements'>('orders');
+  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || '');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchReport = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`/api/reports/export?type=${reportType}`, {
+      const params = new URLSearchParams();
+      params.set('type', reportType);
+      if (selectedShopId && selectedShopId !== 'all') {
+        params.set('shop_id', selectedShopId);
+      }
+
+      const res = await fetch(`/api/reports/export?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -37,7 +44,7 @@ export const ReportsView: React.FC = () => {
 
   useEffect(() => {
     fetchReport();
-  }, [reportType]);
+  }, [reportType, selectedShopId]);
 
   const handleExportCSV = () => {
     if (data.length === 0) {
@@ -95,6 +102,38 @@ export const ReportsView: React.FC = () => {
           <span>Export to CSV</span>
         </button>
       </div>
+
+      {/* Shop Selector Tabs for Reports */}
+      {user?.role === 'admin' && shops.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-600 block">
+            शाखा निवडा (Select Branch for Report)
+          </span>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {shops.map(shop => {
+              const isSelected = selectedShopId === shop.id;
+              const shortName = shop.name.replace('Friends Laundry & Dry Cleaners - ', '');
+              return (
+                <button
+                  key={shop.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedShopId(shop.id);
+                    setActiveShopId(shop.id);
+                  }}
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all border cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-sky-600 to-[#0369A1] text-white border-sky-600 shadow-md shadow-sky-600/25 ring-2 ring-sky-300'
+                      : 'bg-white text-slate-700 border-sky-100 hover:bg-sky-50 shadow-xs'
+                  }`}
+                >
+                  🏪 {shortName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1.5 bg-slate-200 rounded-2xl">

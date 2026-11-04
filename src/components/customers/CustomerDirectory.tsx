@@ -31,12 +31,13 @@ import {
 } from 'lucide-react';
 
 export const CustomerDirectory: React.FC<{ onSelectCustomer?: (customer: Customer) => void }> = ({ onSelectCustomer }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeShopId, setActiveShopId } = useAuth();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [shops, setShops] = useState<Shop[]>([]);
   const [areas, setAreas] = useState<ServiceArea[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || '');
   const [showAddModal, setShowAddModal] = useState(false);
 
   // Add Form
@@ -77,6 +78,8 @@ export const CustomerDirectory: React.FC<{ onSelectCustomer?: (customer: Custome
       setLoading(true);
       const params = new URLSearchParams();
       if (search) params.set('q', search);
+      const targetShop = user?.role === 'shop' ? user.shop_id : selectedShopId;
+      if (targetShop && targetShop !== 'all') params.set('shop_id', targetShop);
 
       const res = await fetch(`/api/customers?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -122,7 +125,7 @@ export const CustomerDirectory: React.FC<{ onSelectCustomer?: (customer: Custome
       fetchCustomers();
     }, 300);
     return () => clearTimeout(timer);
-  }, [search]);
+  }, [search, selectedShopId]);
 
   // Open full ledger for customer
   const handleOpenLedger = async (customer: Customer) => {
@@ -322,6 +325,38 @@ export const CustomerDirectory: React.FC<{ onSelectCustomer?: (customer: Custome
           </button>
         </div>
       </div>
+
+      {/* Shop Navigation Tabs for Admin */}
+      {user?.role === 'admin' && shops.length > 0 && (
+        <div className="space-y-2">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-600 block">
+            शाखा निवडा (Select Branch for Customers)
+          </span>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1">
+            {shops.map(shop => {
+              const isSelected = selectedShopId === shop.id;
+              const shortName = shop.name.replace('Friends Laundry & Dry Cleaners - ', '');
+              return (
+                <button
+                  key={shop.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedShopId(shop.id);
+                    setActiveShopId(shop.id);
+                  }}
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-black whitespace-nowrap transition-all border cursor-pointer ${
+                    isSelected
+                      ? 'bg-gradient-to-r from-sky-600 to-[#0369A1] text-white border-sky-600 shadow-md shadow-sky-600/25 ring-2 ring-sky-300'
+                      : 'bg-white text-slate-700 border-sky-100 hover:bg-sky-50 shadow-xs'
+                  }`}
+                >
+                  🏪 {shortName}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Search Input */}
       <div className="relative">

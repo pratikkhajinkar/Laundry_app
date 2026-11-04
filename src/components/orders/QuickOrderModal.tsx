@@ -43,7 +43,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   onClose,
   onSuccess
 }) => {
-  const { token, user } = useAuth();
+  const { token, user, activeShopId } = useAuth();
   const [orderType, setOrderType] = useState<'pickup' | 'delivery'>(initialType);
 
   // Reference data
@@ -65,7 +65,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [customerOldDue, setCustomerOldDue] = useState<number>(0);
 
   // Order Details
-  const [shopId, setShopId] = useState(user?.role === 'shop' ? (user.shop_id || '') : '');
+  const [shopId, setShopId] = useState(user?.role === 'shop' ? (user.shop_id || '') : (activeShopId || ''));
   const [assignedDeliveryBoyId, setAssignedDeliveryBoyId] = useState(
     user?.role === 'delivery' ? user.id : ''
   );
@@ -125,7 +125,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         if (resShops.ok) {
           const d = await resShops.json();
           setShops(d.shops);
-          if (d.shops.length > 0 && !shopId) setShopId(d.shops[0].id);
+          if (d.shops.length > 0 && !shopId) setShopId(activeShopId || d.shops[0].id);
         }
         if (resBoys.ok) {
           const d = await resBoys.json();

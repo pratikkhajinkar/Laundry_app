@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
-import type { DashboardStats, Order } from '../../types/index.ts';
+import type { DashboardStats, Order, Shop } from '../../types/index.ts';
 import { 
   Building2, 
   Truck, 
@@ -11,11 +11,15 @@ import {
   AlertCircle, 
   Plus, 
   ArrowRight, 
-  RefreshCw,
-  Tag,
-  Receipt,
-  FileText,
-  UserCheck
+  RefreshCw, 
+  Tag, 
+  Receipt, 
+  FileText, 
+  UserCheck,
+  Store,
+  Check,
+  MapPin,
+  Phone
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -24,17 +28,39 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOpenNewOrder }) => {
-  const { token, user, language, t } = useAuth();
+  const { token, user, language, t, activeShopId, setActiveShopId, shops: authShops } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedShopId, setSelectedShopId] = useState<string>(() => {
+    return activeShopId || (authShops.length > 0 ? authShops[0].id : '');
+  });
 
-  const fetchStats = async () => {
+  // Sync selected shop with authShops & activeShopId
+  useEffect(() => {
+    if (!selectedShopId && authShops.length > 0) {
+      const initial = activeShopId || authShops[0].id;
+      setSelectedShopId(initial);
+      setActiveShopId(initial);
+    }
+  }, [authShops, activeShopId, selectedShopId, setActiveShopId]);
+
+  useEffect(() => {
+    if (activeShopId && activeShopId !== selectedShopId) {
+      setSelectedShopId(activeShopId);
+    }
+  }, [activeShopId]);
+
+  const fetchStats = useCallback(async () => {
+    if (!token || !selectedShopId) return;
     try {
       setLoading(true);
+      const statsUrl = `/api/dashboard/stats?shop_id=${selectedShopId}`;
+      const ordersUrl = `/api/orders?shop_id=${selectedShopId}&limit=6`;
+
       const [resStats, resOrders] = await Promise.all([
-        fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } }),
-        fetch('/api/orders?limit=6', { headers: { Authorization: `Bearer ${token}` } })
+        fetch(statsUrl, { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(ordersUrl, { headers: { Authorization: `Bearer ${token}` } })
       ]);
 
       if (resStats.ok) {
@@ -43,20 +69,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
       }
       if (resOrders.ok) {
         const d = await resOrders.json();
-        setRecentOrders(d.orders.slice(0, 5));
+        setRecentOrders(d.orders ? d.orders.slice(0, 6) : []);
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [token, selectedShopId]);
 
   useEffect(() => {
-    fetchStats();
-    const interval = setInterval(fetchStats, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    if (selectedShopId) {
+      fetchStats();
+      const interval = setInterval(fetchStats, 20000);
+      return () => clearInterval(interval);
+    }
+  }, [selectedShopId, fetchStats]);
+
+  const currentShop = authShops.find(s => s.id === selectedShopId) || authShops[0];
+
+  const handleSelectShop = (shopId: string) => {
+    setSelectedShopId(shopId);
+    setActiveShopId(shopId);
+  };
+
+  const handleOpenShopDues = (shopId: string) => {
+    setActiveShopId(shopId);
+    onNavigate('due_payments');
+  };
+
+  const handleOpenShopOrders = (shopId: string) => {
+    setActiveShopId(shopId);
+    onNavigate('orders');
+  };
 
   return (
     <div className="space-y-6">
@@ -64,13 +109,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
       <div className="bg-gradient-to-r from-[#0369A1] via-[#0284C7] to-[#38BDF8] rounded-3xl p-6 sm:p-8 text-white shadow-md shadow-sky-500/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <span className="text-xs font-black uppercase tracking-wider text-sky-100 bg-white/20 px-3 py-1 rounded-full">
-            Friends Laundry & Dry Cleaners • Admin Control Center
+            फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स • Admin Control Center
           </span>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">
             Welcome, {user?.name}!
           </h1>
           <p className="text-xs sm:text-sm text-sky-50 mt-1.5 max-w-xl font-medium">
-            Real-time control over 4 shops, delivery fleet, customer addresses, live clothing counters, automatic invoicing, and dual-persistence durability.
+            सर्व ४ शाखांचे १००% स्वतंत्र व्यवस्थापन. प्रत्येक शाखेच्या ऑर्डर्स, बाकी पेमेंट्स, कॅश हिशोब आणि कामाचे थेट नियंत्रण.
           </p>
         </div>
 
@@ -78,7 +123,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           <button
             type="button"
             onClick={() => onOpenNewOrder('pickup')}
-            className="px-4 py-2.5 bg-white text-sky-900 hover:bg-sky-50 text-xs font-black rounded-2xl shadow-sm transition-all flex items-center gap-2 active:scale-98"
+            className="px-4 py-2.5 bg-white text-sky-900 hover:bg-sky-50 text-xs font-black rounded-2xl shadow-sm transition-all flex items-center gap-2 active:scale-98 cursor-pointer"
           >
             <Plus className="w-4 h-4 text-sky-600" />
             <span>Create Pickup</span>
@@ -87,7 +132,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           <button
             type="button"
             onClick={() => onOpenNewOrder('delivery')}
-            className="px-4 py-2.5 bg-sky-900/40 hover:bg-sky-900/60 text-white text-xs font-black rounded-2xl border border-white/20 transition-all flex items-center gap-2 active:scale-98"
+            className="px-4 py-2.5 bg-sky-900/40 hover:bg-sky-900/60 text-white text-xs font-black rounded-2xl border border-white/20 transition-all flex items-center gap-2 active:scale-98 cursor-pointer"
           >
             <Truck className="w-4 h-4 text-sky-300" />
             <span>Create Delivery</span>
@@ -96,7 +141,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           <button
             type="button"
             onClick={() => onNavigate('master_editor')}
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-black rounded-2xl border border-white/20 backdrop-blur-xs transition-all flex items-center gap-2"
+            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white text-xs font-black rounded-2xl border border-white/20 backdrop-blur-xs transition-all flex items-center gap-2 cursor-pointer"
           >
             <FileText className="w-4 h-4" />
             <span>A-Z Master Editor</span>
@@ -104,28 +149,150 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         </div>
       </div>
 
-      {/* Primary KPI Grid */}
+      {/* Prominent Shop Selector Tabs (Strictly Individual Branches — Zero Mixing) */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
+            <Store className="w-4 h-4 text-sky-600" />
+            <span>शाखा निवडा (Select Branch — Each Branch Shown Separately)</span>
+          </span>
+          <button
+            type="button"
+            onClick={fetchStats}
+            className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1 cursor-pointer"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+            <span>रिफ्रेश</span>
+          </button>
+        </div>
+
+        {/* 4 Separate Branch Cards / Tabs */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {authShops.map(shop => {
+            const isSelected = selectedShopId === shop.id;
+            const shortName = shop.name.replace('Friends Laundry & Dry Cleaners - ', '');
+
+            return (
+              <button
+                key={shop.id}
+                type="button"
+                onClick={() => handleSelectShop(shop.id)}
+                className={`p-4 rounded-3xl border text-left transition-all relative overflow-hidden flex flex-col justify-between cursor-pointer ${
+                  isSelected
+                    ? 'bg-gradient-to-br from-sky-600 via-sky-700 to-[#0369A1] text-white border-sky-600 shadow-lg shadow-sky-600/30 ring-2 ring-sky-400 ring-offset-2'
+                    : 'bg-white text-slate-900 border-sky-100 hover:border-sky-300 hover:bg-sky-50/60 shadow-xs'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div>
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mb-1 ${
+                      isSelected ? 'bg-white/20 text-sky-100' : 'bg-sky-50 text-sky-700 border border-sky-200'
+                    }`}>
+                      {shop.code}
+                    </span>
+                    <h4 className="text-sm font-black tracking-tight leading-snug line-clamp-1">
+                      {shortName}
+                    </h4>
+                  </div>
+
+                  {isSelected && (
+                    <span className="w-6 h-6 rounded-full bg-white/20 text-white flex items-center justify-center shrink-0">
+                      <Check className="w-3.5 h-3.5" />
+                    </span>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-current/15 flex items-baseline justify-between mt-auto">
+                  <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
+                    शाखा स्थिती:
+                  </span>
+                  <span className={`text-xs font-black ${isSelected ? 'text-white' : 'text-sky-700'}`}>
+                    {isSelected ? 'सध्या निवडलेली' : 'निवडण्यासाठी क्लिक करा'}
+                  </span>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected Branch Info & Quick Action Banner */}
+      {currentShop && (
+        <div className="p-4 sm:p-5 bg-gradient-to-r from-sky-50 via-white to-sky-50 border border-sky-200 rounded-3xl flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-sky-600 to-sky-400 text-white flex items-center justify-center font-black shadow-md shadow-sky-500/25 shrink-0 mt-0.5 sm:mt-0">
+              <Store className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
+                  निवडलेली शाखा (Active Selected Branch)
+                </span>
+                <span className="text-[10px] font-bold text-slate-500">{currentShop.code}</span>
+              </div>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight mt-0.5">
+                {currentShop.name}
+              </h2>
+              <div className="flex items-center gap-3 text-xs text-slate-600 mt-0.5 flex-wrap">
+                {currentShop.address && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                    <span>{currentShop.address}</span>
+                  </span>
+                )}
+                {currentShop.phone && (
+                  <span className="flex items-center gap-1 font-bold text-slate-700">
+                    <Phone className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                    <span>{currentShop.phone}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-sky-200 md:pl-5">
+            <button
+              type="button"
+              onClick={() => handleOpenShopOrders(currentShop.id)}
+              className="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              या शाखेच्या सर्व ऑर्डर्स
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOpenShopDues(currentShop.id)}
+              className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors cursor-pointer"
+            >
+              या शाखेची बाकी रक्कम
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Primary KPI Grid (Strictly for this Branch) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Total Shops */}
+        {/* Branch Code / Active */}
         <div 
           onClick={() => onNavigate('shops')} 
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+          className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Total Shops</span>
-            <Building2 className="w-4 h-4 text-emerald-700" />
+            <span className="text-xs font-bold uppercase tracking-wider">शाखा कोड</span>
+            <Building2 className="w-4 h-4 text-sky-700" />
           </div>
-          <div className="text-2xl font-black text-slate-900">{stats?.totalShops ?? 0}</div>
-          <p className="text-[11px] text-slate-500 mt-1">Warje & across Pune</p>
+          <div className="text-2xl font-black text-slate-900">{currentShop?.code || 'ACTIVE'}</div>
+          <p className="text-[11px] text-slate-500 mt-1">
+            {currentShop?.name.replace('Friends Laundry & Dry Cleaners - ', '')}
+          </p>
         </div>
 
         {/* Live Delivery Boys */}
         <div 
           onClick={() => onNavigate('live_delivery_boys')} 
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+          className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Live Delivery Boys</span>
+            <span className="text-xs font-bold uppercase tracking-wider">डिलिव्हरी बॉईज</span>
             <Truck className="w-4 h-4 text-emerald-700" />
           </div>
           <div className="flex items-center gap-2">
@@ -140,14 +307,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           </p>
         </div>
 
-        {/* Today's Pickups / Deliveries */}
+        {/* Today's Pickups / Deliveries for this shop */}
         <div 
-          onClick={() => onNavigate('orders')} 
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+          onClick={() => handleOpenShopOrders(selectedShopId)} 
+          className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Today's Jobs</span>
-            <Package className="w-4 h-4 text-blue-600" />
+            <span className="text-xs font-bold uppercase tracking-wider">या शाखेचे आजचे काम</span>
+            <Package className="w-4 h-4 text-sky-600" />
           </div>
           <div className="text-2xl font-black text-slate-900">
             {stats?.todayPickups ?? 0} <span className="text-xs text-slate-500 font-bold">Pickups</span>
@@ -157,85 +324,85 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           </p>
         </div>
 
-        {/* Total Outstanding Customer Due */}
+        {/* Total Outstanding Customer Due for this shop */}
         <div 
-          onClick={() => onNavigate('due_payments')} 
-          className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs hover:shadow-xs transition-all cursor-pointer"
+          onClick={() => handleOpenShopDues(selectedShopId)} 
+          className="bg-white p-5 rounded-3xl border border-rose-200 shadow-xs hover:border-rose-400 transition-all cursor-pointer bg-rose-50/20"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">Customer Due Balance</span>
-            <IndianRupee className="w-4 h-4 text-red-600" />
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-700">या शाखेची बाकी रक्कम</span>
+            <IndianRupee className="w-4 h-4 text-rose-600" />
           </div>
-          <div className="text-2xl font-black text-red-700">
+          <div className="text-2xl font-black text-rose-600">
             ₹{(stats?.totalOutstanding ?? 0).toFixed(2)}
           </div>
-          <p className="text-[11px] text-red-600 font-semibold mt-1">
-            Unpaid Customer Invoices
+          <p className="text-[11px] text-rose-600 font-semibold mt-1">
+            {stats?.overdueDuesCount ?? 0} ग्राहक बिले प्रलंबित
           </p>
         </div>
       </div>
 
       {/* Secondary Financial KPI Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-        {/* Collections Today */}
-        <div className="bg-white p-5 rounded-2xl border border-sky-100 shadow-2xs flex items-center justify-between">
+        {/* Collections Today for this shop */}
+        <div className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Collections Today</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">आजची वसुली (Shop)</span>
             <span className="text-2xl font-black text-emerald-800 mt-1 block">
               ₹{(stats?.todayCollections ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-slate-500">Today's collection (Cash/UPI)</span>
+            <span className="text-[11px] text-slate-500">या शाखेचे रोख / UPI संकलन</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xl">
             ₹
           </div>
         </div>
 
-        {/* Overdue Credit Dues */}
+        {/* Overdue Credit Dues for this shop */}
         <div 
-          onClick={() => onNavigate('due_payments')}
-          className="bg-white p-5 rounded-2xl border border-rose-200 shadow-2xs flex items-center justify-between cursor-pointer hover:bg-rose-50/40 transition-colors"
+          onClick={() => handleOpenShopDues(selectedShopId)}
+          className="bg-white p-5 rounded-3xl border border-rose-200 shadow-xs flex items-center justify-between cursor-pointer hover:bg-rose-50/40 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 block">Overdue Customer Dues</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 block">मुदत संपलेली बाकी</span>
             <span className="text-2xl font-black text-rose-700 mt-1 block">
               ₹{(stats?.overdueDuesAmount ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-rose-600 font-bold">{stats?.overdueDuesCount ?? 0} customer bills past due</span>
+            <span className="text-[11px] text-rose-600 font-bold">{stats?.overdueDuesCount ?? 0} बिले मुदतबाहेर</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
             <AlertCircle className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Pending Shop Settlements */}
+        {/* Pending Cash Settlements for this shop */}
         <div 
           onClick={() => onNavigate('settlements')}
-          className="bg-white p-5 rounded-2xl border border-sky-100 shadow-2xs flex items-center justify-between cursor-pointer hover:border-amber-300 transition-colors"
+          className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-amber-300 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Pending Cash Handover</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">कॅश हिशोब बाकी</span>
             <span className="text-2xl font-black text-amber-700 mt-1 block">
               ₹{(stats?.pendingSettlements ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-amber-800 font-semibold">Cash held by delivery boys</span>
+            <span className="text-[11px] text-amber-800 font-semibold">डिलिव्हरी बॉईजकडील रोख</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center font-bold">
             <Clock className="w-6 h-6" />
           </div>
         </div>
 
-        {/* Active Orders Pipeline */}
+        {/* Active Orders Pipeline for this shop */}
         <div 
-          onClick={() => onNavigate('orders')}
-          className="bg-white p-5 rounded-2xl border border-sky-100 shadow-2xs flex items-center justify-between cursor-pointer hover:border-sky-300 transition-colors"
+          onClick={() => handleOpenShopOrders(selectedShopId)}
+          className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-sky-300 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Active Pipeline</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">सक्रिय ऑर्डर्स</span>
             <span className="text-2xl font-black text-slate-900 mt-1 block">
-              {stats?.pendingOrders ?? 0} Orders
+              {stats?.pendingOrders ?? 0} ऑर्डर्स
             </span>
-            <span className="text-[11px] text-slate-500">In pickup, washing or delivery</span>
+            <span className="text-[11px] text-slate-500">पिकअप, वॉशिंग किंवा डिलिव्हरी</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold">
             <Package className="w-6 h-6" />
@@ -243,21 +410,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         </div>
       </div>
 
-      {/* Today's Itemized Collections List */}
+      {/* Today's Itemized Collections List for this shop */}
       {stats?.todayCollectionsList && stats.todayCollectionsList.length > 0 && (
-        <div className="bg-white rounded-3xl border border-sky-100 shadow-2xs p-5 sm:p-6 space-y-3">
+        <div className="bg-white rounded-3xl border border-sky-100 shadow-xs p-5 sm:p-6 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">
-                Real-Time Payments Feed
+                या शाखेची थेट पेमेंट नोंद
               </span>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Today's Collections Attribution</span>
+                <span>आज जमा झालेली रक्कम ({currentShop?.name})</span>
               </h3>
             </div>
             <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              Total Collections: ₹{(stats?.todayCollections ?? 0).toFixed(2)}
+              एकूण: ₹{(stats?.todayCollections ?? 0).toFixed(2)}
             </span>
           </div>
 
@@ -276,7 +443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
                     <span className="font-extrabold text-slate-900">{tx.customer_name}</span>
                     <span className="text-[11px] text-slate-500 ml-1.5">({tx.order_number})</span>
                     <span className="text-[10px] text-slate-400 block sm:inline sm:ml-2">
-                      Collected by: <strong className="text-slate-600">{tx.collected_by}</strong>
+                      जमा घेणारे: <strong className="text-slate-600">{tx.collected_by}</strong>
                     </span>
                   </div>
                 </div>
@@ -294,69 +461,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         </div>
       )}
 
-      {/* Quick Access Tiles */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <button
-          type="button"
-          onClick={() => onNavigate('live_delivery_boys')}
-          className="p-4 bg-white rounded-2xl border border-slate-200 text-left hover:border-emerald-600 transition-colors shadow-2xs"
-        >
-          <Truck className="w-5 h-5 text-emerald-800 mb-2" />
-          <h4 className="text-xs font-bold text-slate-900">Live Delivery Fleet</h4>
-          <p className="text-[11px] text-slate-500 mt-0.5">Availability & assignments</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('price_list')}
-          className="p-4 bg-white rounded-2xl border border-slate-200 text-left hover:border-emerald-600 transition-colors shadow-2xs"
-        >
-          <Tag className="w-5 h-5 text-emerald-800 mb-2" />
-          <h4 className="text-xs font-bold text-slate-900">Clothing Price List</h4>
-          <p className="text-[11px] text-slate-500 mt-0.5">Rates per garment & item</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('due_payments')}
-          className="p-4 bg-white rounded-2xl border border-slate-200 text-left hover:border-emerald-600 transition-colors shadow-2xs"
-        >
-          <IndianRupee className="w-5 h-5 text-red-600 mb-2" />
-          <h4 className="text-xs font-bold text-slate-900">Due Payments</h4>
-          <p className="text-[11px] text-slate-500 mt-0.5">Collect balance from customers</p>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => onNavigate('settlements')}
-          className="p-4 bg-white rounded-2xl border border-slate-200 text-left hover:border-emerald-600 transition-colors shadow-2xs"
-        >
-          <UserCheck className="w-5 h-5 text-amber-700 mb-2" />
-          <h4 className="text-xs font-bold text-slate-900">Shop Settlements</h4>
-          <p className="text-[11px] text-slate-500 mt-0.5">Confirm cash handed to shop</p>
-        </button>
-      </div>
-
-      {/* Recent Orders Preview */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-2xs p-5">
+      {/* Recent Orders Preview for this shop */}
+      <div className="bg-white rounded-3xl border border-sky-100 shadow-xs p-5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-sm font-bold text-slate-900">Recent Laundry Orders</h3>
-            <p className="text-xs text-slate-500">Latest pickups recorded across all shops</p>
+            <h3 className="text-sm font-black text-slate-900">
+              {currentShop?.name} मधील ताज्या ऑर्डर्स
+            </h3>
+            <p className="text-xs text-slate-500">
+              Latest orders strictly from this selected branch
+            </p>
           </div>
           <button
             type="button"
-            onClick={() => onNavigate('orders')}
-            className="text-xs font-bold text-emerald-800 hover:text-emerald-950 flex items-center gap-1"
+            onClick={() => handleOpenShopOrders(selectedShopId)}
+            className="text-xs font-black text-sky-700 hover:text-sky-900 flex items-center gap-1 cursor-pointer"
           >
-            <span>View All Orders</span>
+            <span>सर्व ऑर्डर्स पहा</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {recentOrders.length === 0 ? (
-          <div className="text-center py-8 text-xs text-slate-500">
-            No orders created yet. Click 'Create Pickup Order' to record your first order.
+          <div className="text-center py-8 text-xs text-slate-500 font-medium">
+            या शाखेत कोणतीही ऑर्डर उपलब्ध नाही. नवीन ऑर्डर तयार करा.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -364,18 +492,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
               <div key={o.id} className="py-3 flex items-center justify-between text-xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="font-mono font-bold text-slate-900">{o.order_number}</span>
-                    <span className="font-semibold text-slate-700">{o.customer_name}</span>
+                    <span className="font-mono font-black text-sky-900 bg-sky-50 px-2 py-0.5 rounded-lg border border-sky-200">
+                      {o.order_number}
+                    </span>
+                    <span className="font-bold text-slate-900">{o.customer_name}</span>
                     <span className="text-[11px] text-slate-500">({o.area})</span>
                   </div>
-                  <div className="text-[11px] text-slate-400 mt-0.5">
-                    Shop: {o.shop_name} • Driver: {o.delivery_boy_name || 'Unassigned'}
+                  <div className="text-[11px] text-slate-500 mt-1">
+                    शाखा: <strong>{o.shop_name}</strong> • ड्रायव्हर: {o.delivery_boy_name || 'अद्याप दिलेला नाही'}
+                    {(o.outstanding_amount || 0) > 0 && (
+                      <span className="ml-2 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+                        बाकी: ₹{o.outstanding_amount.toFixed(2)}
+                      </span>
+                    )}
                   </div>
                 </div>
 
                 <div className="text-right">
                   <div className="font-black text-slate-900">₹{o.final_total.toFixed(2)}</div>
-                  <div className="text-[11px] capitalize text-emerald-700 font-semibold">{o.status.replace(/_/g, ' ')}</div>
+                  <div className="text-[11px] capitalize text-sky-700 font-bold">{o.status.replace(/_/g, ' ')}</div>
                 </div>
               </div>
             ))}

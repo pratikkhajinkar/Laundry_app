@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { 
   Shirt, 
@@ -10,7 +10,9 @@ import {
   Camera,
   Menu,
   Zap,
-  Globe
+  Globe,
+  ChevronDown,
+  Check
 } from 'lucide-react';
 import { LogoManagerModal } from './admin/LogoManagerModal.tsx';
 import { OptionsMenuDrawer } from './navigation/OptionsMenuDrawer.tsx';
@@ -30,10 +32,22 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenNewOrder,
   onOpenMenu
 }) => {
-  const { user, token, logout, language, setLanguage, t, toggleAvailability } = useAuth();
+  const { user, token, logout, language, setLanguage, t, toggleAvailability, activeShopId, setActiveShopId, shops } = useAuth();
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [showLogoModal, setShowLogoModal] = useState<boolean>(false);
   const [showDrawer, setShowDrawer] = useState<boolean>(false);
+  const [showShopDropdown, setShowShopDropdown] = useState<boolean>(false);
+  const shopDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (shopDropdownRef.current && !shopDropdownRef.current.contains(e.target as Node)) {
+        setShowShopDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     fetch('/api/settings')
@@ -45,6 +59,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   }, []);
 
   if (!user) return null;
+
+  const activeShop = shops.find(s => s.id === activeShopId);
 
   const roleBadge = () => {
     switch (user.role) {
@@ -145,6 +161,55 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             {/* Right Action buttons & Prominent Fixed Menu Button */}
             <div className="flex items-center gap-2 shrink-0">
+              {/* Admin Shop Switcher */}
+              {user.role === 'admin' && shops.length > 0 && (
+                <div className="relative" ref={shopDropdownRef}>
+                  <button
+                    type="button"
+                    onClick={() => setShowShopDropdown(prev => !prev)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-sky-50 text-sky-900 border border-sky-300 hover:bg-sky-100 transition-all cursor-pointer shadow-2xs"
+                    title="सध्याची शाखा बदला / Switch Active Shop Branch"
+                  >
+                    <Store className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                    <span className="truncate max-w-[110px] sm:max-w-[150px]">
+                      {activeShop?.name?.replace('Friends Laundry & Dry Cleaners - ', '') || 'Select Shop'}
+                    </span>
+                    <ChevronDown className={`w-3 h-3 text-sky-600 transition-transform ${showShopDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+
+                  {showShopDropdown && (
+                    <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-sky-100 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+                      <div className="px-3.5 py-1.5 border-b border-sky-50 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                        शाखा निवडा (Select Branch)
+                      </div>
+                      {shops.map(s => {
+                        const isSelected = s.id === activeShopId;
+                        const shortName = s.name.replace('Friends Laundry & Dry Cleaners - ', '');
+                        return (
+                          <button
+                            key={s.id}
+                            type="button"
+                            onClick={() => {
+                              setActiveShopId(s.id);
+                              setShowShopDropdown(false);
+                            }}
+                            className={`w-full text-left px-3.5 py-2 text-xs font-bold flex items-center justify-between transition-colors ${
+                              isSelected ? 'bg-sky-50 text-sky-900 font-black' : 'text-slate-700 hover:bg-slate-50'
+                            }`}
+                          >
+                            <div className="truncate pr-2">
+                              <div className="truncate">{shortName}</div>
+                              <div className="text-[10px] text-slate-400 font-normal">{s.code}</div>
+                            </div>
+                            {isSelected && <Check className="w-4 h-4 text-sky-600 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {roleBadge()}
 
               {/* Dedicated Options Menu Button (Rock-solid, opens all options cleanly) */}

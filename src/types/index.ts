@@ -347,6 +347,17 @@ export interface DashboardStats {
     collected_by: string;
     created_at: string;
   }>;
+  shopsBreakdown?: Array<{
+    shop_id: string;
+    shop_name: string;
+    shop_code: string;
+    shop_phone?: string;
+    total_orders: number;
+    pending_orders: number;
+    due_orders_count: number;
+    total_due_amount: number;
+    today_collections: number;
+  }>;
   // Shop stats
   todayOrders?: number;
   assignedBoys?: number;

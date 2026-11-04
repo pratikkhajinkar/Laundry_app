@@ -601,10 +601,14 @@ apiRouter.get('/customers', authenticate, (req: AuthenticatedRequest, res) => {
   const params: any[] = [];
   const whereClauses: string[] = [];
 
-  // Data isolation: Shop staff only sees their shop's customers
+  // Data isolation: Shop staff only sees their shop's customers; Admin can filter by shop
+  const requestedShopId = (req.query.shop_id as string) || '';
   if (req.user?.role === 'shop') {
     whereClauses.push('c.shop_id = ?');
     params.push(req.user.shop_id);
+  } else if (req.user?.role === 'admin' && requestedShopId && requestedShopId !== 'all') {
+    whereClauses.push('c.shop_id = ?');
+    params.push(requestedShopId);
   }
 
   if (query) {
@@ -971,6 +975,7 @@ apiRouter.get('/orders', authenticate, (req: AuthenticatedRequest, res) => {
   const role = req.user!.role;
   const statusFilter = req.query.status as string;
   const dateFilter = req.query.date as string;
+  const requestedShopId = (req.query.shop_id as string) || '';
 
   let sql = `
     SELECT 
@@ -998,11 +1003,19 @@ apiRouter.get('/orders', authenticate, (req: AuthenticatedRequest, res) => {
   } else if (role === 'delivery') {
     whereClauses.push('o.assigned_delivery_boy_id = ?');
     params.push(req.user!.id);
+  } else if (role === 'admin' && requestedShopId && requestedShopId !== 'all') {
+    whereClauses.push('o.shop_id = ?');
+    params.push(requestedShopId);
   }
 
   if (statusFilter && statusFilter !== 'all') {
     whereClauses.push('o.status = ?');
     params.push(statusFilter);
+  }
+
+  const hasDueOnly = req.query.due_only === 'true' || req.query.has_due === 'true';
+  if (hasDueOnly) {
+    whereClauses.push('o.outstanding_amount > 0');
   }
 
   if (dateFilter) {
@@ -2774,7 +2787,36 @@ apiRouter.post('/orders/:id/pickup-proof-whatsapp', authenticate, (req: Authenti
 // DUE PAYMENTS & PAYMENT COLLECTIONS
 // -------------------------------------------------------------
 
+apiRouter.get('/due-payments/summary', authenticate, (req: AuthenticatedRequest, res) => {
+  const summary = db.prepare(`
+    SELECT 
+      s.id as shop_id,
+      s.name as shop_name,
+      s.code as shop_code,
+      s.phone as shop_phone,
+      s.address as shop_address,
+      COUNT(inv.id) as due_orders_count,
+      COALESCE(SUM(inv.outstanding_balance), 0) as total_due_amount
+    FROM shops s
+    LEFT JOIN invoices inv ON inv.shop_id = s.id AND inv.outstanding_balance > 0
+    GROUP BY s.id, s.name, s.code, s.phone, s.address
+    ORDER BY total_due_amount DESC, s.name ASC
+  `).all() as any[];
+
+  const totals = summary.reduce(
+    (acc, curr) => ({
+      total_orders_with_due: acc.total_orders_with_due + Number(curr.due_orders_count || 0),
+      total_outstanding_amount: Math.round((acc.total_outstanding_amount + Number(curr.total_due_amount || 0)) * 100) / 100
+    }),
+    { total_orders_with_due: 0, total_outstanding_amount: 0 }
+  );
+
+  res.json({ summary, totals });
+});
+
 apiRouter.get('/due-payments', authenticate, (req: AuthenticatedRequest, res) => {
+  const requestedShopId = (req.query.shop_id as string) || '';
+
   let sql = `
     SELECT 
       inv.id as invoice_id, inv.invoice_number, inv.date, inv.final_total, inv.amount_paid, inv.outstanding_balance,
@@ -2804,6 +2846,9 @@ apiRouter.get('/due-payments', authenticate, (req: AuthenticatedRequest, res) =>
       sql += ' AND (o.assigned_delivery_boy_id = ? OR c.area IN (SELECT name FROM service_areas WHERE id = ?))';
       params.push(req.user.id, req.user.service_area_id);
     }
+  } else if (req.user?.role === 'admin' && requestedShopId && requestedShopId !== 'all') {
+    sql += ' AND inv.shop_id = ?';
+    params.push(requestedShopId);
   }
 
   sql += ' ORDER BY inv.outstanding_balance DESC';
@@ -3029,6 +3074,7 @@ apiRouter.post('/payments/collect', authenticate, (req: AuthenticatedRequest, re
 // -------------------------------------------------------------
 
 apiRouter.get('/settlements/pending', authenticate, (req: AuthenticatedRequest, res) => {
+  const requestedShopId = (req.query.shop_id as string) || '';
   // Query cash collected by delivery boys that hasn't been handed over to the shop yet
   let sql = `
     SELECT 
@@ -3050,6 +3096,9 @@ apiRouter.get('/settlements/pending', authenticate, (req: AuthenticatedRequest, 
   } else if (req.user?.role === 'delivery') {
     sql += ' AND pt.collected_by_delivery_boy_id = ?';
     params.push(req.user.id);
+  } else if (req.user?.role === 'admin' && requestedShopId && requestedShopId !== 'all') {
+    sql += ' AND pt.shop_id = ?';
+    params.push(requestedShopId);
   }
 
   sql += ' GROUP BY pt.shop_id, pt.collected_by_delivery_boy_id';
@@ -3058,6 +3107,7 @@ apiRouter.get('/settlements/pending', authenticate, (req: AuthenticatedRequest, 
 });
 
 apiRouter.get('/settlements', authenticate, (req: AuthenticatedRequest, res) => {
+  const requestedShopId = (req.query.shop_id as string) || '';
   let sql = `
     SELECT 
       ss.*, 
@@ -3077,6 +3127,9 @@ apiRouter.get('/settlements', authenticate, (req: AuthenticatedRequest, res) => 
   } else if (req.user?.role === 'delivery') {
     sql += ' WHERE ss.delivery_boy_id = ?';
     params.push(req.user.id);
+  } else if (req.user?.role === 'admin' && requestedShopId && requestedShopId !== 'all') {
+    sql += ' WHERE ss.shop_id = ?';
+    params.push(requestedShopId);
   }
 
   sql += ' ORDER BY ss.created_at DESC';
@@ -3184,41 +3237,104 @@ apiRouter.get('/dashboard/stats', authenticate, (req: AuthenticatedRequest, res)
   const today = new Date().toISOString().split('T')[0];
 
   if (role === 'admin') {
+    const requestedShopId = (req.query.shop_id as string) || '';
+    const hasShop = Boolean(requestedShopId && requestedShopId !== 'all');
+
     const totalShops = (db.prepare('SELECT COUNT(*) as c FROM shops').get() as any).c;
     const onlineBoys = (db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'delivery' AND is_online = 1").get() as any).c;
     const availableBoys = (db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'delivery' AND is_online = 1 AND is_busy = 0").get() as any).c;
-    const todayPickups = (db.prepare("SELECT COUNT(*) as c FROM orders WHERE DATE(pickup_date) = ?").get(today) as any).c;
-    const todayDeliveries = (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered' AND DATE(updated_at) = ?").get(today) as any).c;
-    const pendingOrders = (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status IN ('pending', 'created', 'assigned', 'pickup_started', 'arriving', 'picked_up', 'received_at_shop', 'in_processing', 'ready_for_delivery', 'out_for_delivery')").get() as any).c;
-    const totalOutstanding = (db.prepare("SELECT COALESCE(SUM(outstanding_amount), 0) as s FROM orders").get() as any).s;
-    const todayCollections = (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE DATE(created_at) = ?").get(today) as any).s;
-    const pendingSettlements = (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE is_settled_with_shop = 0 AND payment_method = 'cash'").get() as any).s;
+
+    const todayPickups = hasShop
+      ? (db.prepare("SELECT COUNT(*) as c FROM orders WHERE DATE(pickup_date) = ? AND shop_id = ?").get(today, requestedShopId) as any).c
+      : (db.prepare("SELECT COUNT(*) as c FROM orders WHERE DATE(pickup_date) = ?").get(today) as any).c;
+
+    const todayDeliveries = hasShop
+      ? (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered' AND DATE(updated_at) = ? AND shop_id = ?").get(today, requestedShopId) as any).c
+      : (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status = 'delivered' AND DATE(updated_at) = ?").get(today) as any).c;
+
+    const pendingOrders = hasShop
+      ? (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status IN ('pending', 'created', 'assigned', 'pickup_started', 'arriving', 'picked_up', 'received_at_shop', 'in_processing', 'ready_for_delivery', 'out_for_delivery') AND shop_id = ?").get(requestedShopId) as any).c
+      : (db.prepare("SELECT COUNT(*) as c FROM orders WHERE status IN ('pending', 'created', 'assigned', 'pickup_started', 'arriving', 'picked_up', 'received_at_shop', 'in_processing', 'ready_for_delivery', 'out_for_delivery')").get() as any).c;
+
+    const totalOutstanding = hasShop
+      ? (db.prepare("SELECT COALESCE(SUM(outstanding_amount), 0) as s FROM orders WHERE shop_id = ?").get(requestedShopId) as any).s
+      : (db.prepare("SELECT COALESCE(SUM(outstanding_amount), 0) as s FROM orders").get() as any).s;
+
+    const todayCollections = hasShop
+      ? (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE DATE(created_at) = ? AND shop_id = ?").get(today, requestedShopId) as any).s
+      : (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE DATE(created_at) = ?").get(today) as any).s;
+
+    const pendingSettlements = hasShop
+      ? (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE is_settled_with_shop = 0 AND payment_method = 'cash' AND shop_id = ?").get(requestedShopId) as any).s
+      : (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE is_settled_with_shop = 0 AND payment_method = 'cash'").get() as any).s;
 
     // Overdue credit dues
-    const overdueRow = db.prepare(`
-      SELECT COUNT(*) as c, COALESCE(SUM(outstanding_amount), 0) as s
-      FROM orders
-      WHERE outstanding_amount > 0 AND expected_payment_date IS NOT NULL AND expected_payment_date < ?
-    `).get(today) as { c: number; s: number };
+    const overdueRow = hasShop
+      ? (db.prepare(`
+          SELECT COUNT(*) as c, COALESCE(SUM(outstanding_amount), 0) as s
+          FROM orders
+          WHERE outstanding_amount > 0 AND expected_payment_date IS NOT NULL AND expected_payment_date < ? AND shop_id = ?
+        `).get(today, requestedShopId) as { c: number; s: number })
+      : (db.prepare(`
+          SELECT COUNT(*) as c, COALESCE(SUM(outstanding_amount), 0) as s
+          FROM orders
+          WHERE outstanding_amount > 0 AND expected_payment_date IS NOT NULL AND expected_payment_date < ?
+        `).get(today) as { c: number; s: number });
 
-    // Today's itemized collection transactions list
-    const todayCollectionsList = db.prepare(`
-      SELECT 
-        pt.id, pt.amount, pt.payment_method, pt.created_at,
-        c.name as customer_name,
-        o.order_number,
-        COALESCE(u.name, pt.recorded_by_name, 'Staff') as collected_by
-      FROM payment_transactions pt
-      LEFT JOIN customers c ON c.id = pt.customer_id
-      LEFT JOIN orders o ON o.id = pt.order_id
-      LEFT JOIN users u ON u.id = pt.collected_by_delivery_boy_id
-      WHERE DATE(pt.created_at) = ?
-      ORDER BY pt.created_at DESC
-      LIMIT 15
-    `).all(today) as any[];
+    // Itemized collection transactions list
+    const todayCollectionsList = hasShop
+      ? (db.prepare(`
+          SELECT 
+            pt.id, pt.amount, pt.payment_method, pt.created_at,
+            c.name as customer_name,
+            o.order_number,
+            COALESCE(u.name, pt.recorded_by_name, 'Staff') as collected_by
+          FROM payment_transactions pt
+          LEFT JOIN customers c ON c.id = pt.customer_id
+          LEFT JOIN orders o ON o.id = pt.order_id
+          LEFT JOIN users u ON u.id = pt.collected_by_delivery_boy_id
+          WHERE DATE(pt.created_at) = ? AND pt.shop_id = ?
+          ORDER BY pt.created_at DESC
+          LIMIT 15
+        `).all(today, requestedShopId) as any[])
+      : (db.prepare(`
+          SELECT 
+            pt.id, pt.amount, pt.payment_method, pt.created_at,
+            c.name as customer_name,
+            o.order_number,
+            COALESCE(u.name, pt.recorded_by_name, 'Staff') as collected_by
+          FROM payment_transactions pt
+          LEFT JOIN customers c ON c.id = pt.customer_id
+          LEFT JOIN orders o ON o.id = pt.order_id
+          LEFT JOIN users u ON u.id = pt.collected_by_delivery_boy_id
+          WHERE DATE(pt.created_at) = ?
+          ORDER BY pt.created_at DESC
+          LIMIT 15
+        `).all(today) as any[]);
+
+    // Always provide per-shop breakdown so UI can present shop-wise metrics
+    const shopsList = db.prepare('SELECT id, name, code, phone, address FROM shops ORDER BY name ASC').all() as any[];
+    const shopsBreakdown = shopsList.map(sh => {
+      const oCount = (db.prepare('SELECT COUNT(*) as c FROM orders WHERE shop_id = ?').get(sh.id) as any).c;
+      const pCount = (db.prepare("SELECT COUNT(*) as c FROM orders WHERE shop_id = ? AND status IN ('pending', 'created', 'assigned', 'pickup_started', 'arriving', 'picked_up', 'received_at_shop', 'in_processing', 'ready_for_delivery', 'out_for_delivery')").get(sh.id) as any).c;
+      const dRow = db.prepare("SELECT COUNT(*) as c, COALESCE(SUM(outstanding_balance), 0) as s FROM invoices WHERE shop_id = ? AND outstanding_balance > 0").get(sh.id) as any;
+      const cToday = (db.prepare("SELECT COALESCE(SUM(amount), 0) as s FROM payment_transactions WHERE shop_id = ? AND DATE(created_at) = ?").get(sh.id, today) as any).s;
+      return {
+        shop_id: sh.id,
+        shop_name: sh.name,
+        shop_code: sh.code,
+        shop_phone: sh.phone,
+        total_orders: oCount,
+        pending_orders: pCount,
+        due_orders_count: dRow.c || 0,
+        total_due_amount: Math.round((dRow.s || 0) * 100) / 100,
+        today_collections: Math.round((cToday || 0) * 100) / 100
+      };
+    });
 
     return res.json({
       role: 'admin',
+      selectedShopId: hasShop ? requestedShopId : null,
       totalShops,
       onlineBoys,
       availableBoys,
@@ -3230,7 +3346,8 @@ apiRouter.get('/dashboard/stats', authenticate, (req: AuthenticatedRequest, res)
       pendingSettlements: Math.round(pendingSettlements * 100) / 100,
       overdueDuesCount: overdueRow.c || 0,
       overdueDuesAmount: Math.round((overdueRow.s || 0) * 100) / 100,
-      todayCollectionsList
+      todayCollectionsList,
+      shopsBreakdown
     });
   }
 
@@ -3296,9 +3413,11 @@ apiRouter.get('/audit-logs', authenticate, requireRole(['admin']), (req, res) =>
 
 apiRouter.get('/reports/export', authenticate, (req: AuthenticatedRequest, res) => {
   const type = req.query.type as string; // 'orders', 'due_payments', 'collections', 'settlements'
-  const shopId = req.user?.role === 'shop' ? req.user.shop_id : (req.query.shop_id as string);
+  const rawShopId = req.user?.role === 'shop' ? req.user.shop_id : (req.query.shop_id as string);
+  const shopId = (rawShopId && rawShopId !== 'all') ? rawShopId : null;
 
   let rows: any[] = [];
+  const params: any[] = [];
 
   if (type === 'orders') {
     let sql = `
@@ -3309,9 +3428,12 @@ apiRouter.get('/reports/export', authenticate, (req: AuthenticatedRequest, res) 
       LEFT JOIN customers c ON c.id = o.customer_id
       LEFT JOIN shops s ON s.id = o.shop_id
     `;
-    if (shopId) sql += ` WHERE o.shop_id = '${shopId}'`;
+    if (shopId) {
+      sql += ' WHERE o.shop_id = ?';
+      params.push(shopId);
+    }
     sql += ' ORDER BY o.created_at DESC';
-    rows = db.prepare(sql).all();
+    rows = db.prepare(sql).all(...params);
   } else if (type === 'due_payments') {
     let sql = `
       SELECT inv.invoice_number, 
@@ -3323,9 +3445,12 @@ apiRouter.get('/reports/export', authenticate, (req: AuthenticatedRequest, res) 
       LEFT JOIN shops s ON s.id = inv.shop_id
       WHERE inv.outstanding_balance > 0
     `;
-    if (shopId) sql += ` AND inv.shop_id = '${shopId}'`;
+    if (shopId) {
+      sql += ' AND inv.shop_id = ?';
+      params.push(shopId);
+    }
     sql += ' ORDER BY inv.outstanding_balance DESC';
-    rows = db.prepare(sql).all();
+    rows = db.prepare(sql).all(...params);
   } else if (type === 'collections') {
     let sql = `
       SELECT pt.created_at, pt.amount, pt.payment_method, pt.transaction_reference, 
@@ -3337,9 +3462,12 @@ apiRouter.get('/reports/export', authenticate, (req: AuthenticatedRequest, res) 
       LEFT JOIN shops s ON s.id = pt.shop_id
       LEFT JOIN users d ON d.id = pt.collected_by_delivery_boy_id
     `;
-    if (shopId) sql += ` WHERE pt.shop_id = '${shopId}'`;
+    if (shopId) {
+      sql += ' WHERE pt.shop_id = ?';
+      params.push(shopId);
+    }
     sql += ' ORDER BY pt.created_at DESC';
-    rows = db.prepare(sql).all();
+    rows = db.prepare(sql).all(...params);
   } else if (type === 'settlements') {
     let sql = `
       SELECT ss.settlement_number, ss.created_at, 
@@ -3352,9 +3480,12 @@ apiRouter.get('/reports/export', authenticate, (req: AuthenticatedRequest, res) 
       LEFT JOIN users d ON d.id = ss.delivery_boy_id
       LEFT JOIN users u ON u.id = ss.confirmed_by_user_id
     `;
-    if (shopId) sql += ` WHERE ss.shop_id = '${shopId}'`;
+    if (shopId) {
+      sql += ' WHERE ss.shop_id = ?';
+      params.push(shopId);
+    }
     sql += ' ORDER BY ss.created_at DESC';
-    rows = db.prepare(sql).all();
+    rows = db.prepare(sql).all(...params);
   }
 
   res.json({ type, count: rows.length, rows });
