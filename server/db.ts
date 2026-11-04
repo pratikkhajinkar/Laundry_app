@@ -46,9 +46,11 @@ db.exec('PRAGMA wal_autocheckpoint = 100;');
 export function backupDatabase() {
   try {
     const backupPath = path.join(dataDir, 'laundry_backup.db');
+    const safeBackupPath = path.join(dataDir, 'laundry_backup_safe.db');
     // Force a WAL checkpoint to flush all data to the main database file before copying
     db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
     fs.copyFileSync(dbPath, backupPath);
+    fs.copyFileSync(dbPath, safeBackupPath);
   } catch (err) {
     console.error('Backup error:', err);
   }
@@ -103,6 +105,18 @@ export function initDatabase() {
       is_active INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
       created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS deleted_category_tombstones (
+      id TEXT PRIMARY KEY,
+      name TEXT,
+      deleted_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS deleted_customer_tombstones (
+      id TEXT PRIMARY KEY,
+      mobile TEXT,
+      deleted_at TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS customers (
@@ -403,26 +417,34 @@ export function ensureDefaultShopsAndAreas() {
   const categoryCount = db.prepare('SELECT COUNT(*) as count FROM clothing_categories').get() as { count: number };
   if (categoryCount.count === 0) {
     const defaultCategories = [
-      { name: 'T-shirt', name_mr: 'T-shirt', rate: 20, sort: 1 },
-      { name: 'Shirt', name_mr: 'Shirt', rate: 25, sort: 2 },
-      { name: 'Pant', name_mr: 'Pant / Trouser', rate: 30, sort: 3 },
-      { name: 'Jeans', name_mr: 'Jeans', rate: 35, sort: 4 },
-      { name: 'Kurta', name_mr: 'Kurta / Pyjama', rate: 40, sort: 5 },
-      { name: 'Saree', name_mr: 'Saree', rate: 90, sort: 6 },
-      { name: 'Dress', name_mr: 'Dress / Suit', rate: 80, sort: 7 },
-      { name: 'Bed Sheet', name_mr: 'Bed Sheet', rate: 70, unit: 'piece', sort: 8 },
-      { name: 'Wash & Fold (By Weight)', name_mr: 'Wash & Fold (Per Kg)', rate: 80, unit: 'kg', sort: 9 },
-      { name: 'Wash & Iron (By Weight)', name_mr: 'Wash & Iron (Per Kg)', rate: 100, unit: 'kg', sort: 10 },
-      { name: 'Curtains (By Sq Ft)', name_mr: 'Curtains (Per Sq Ft)', rate: 25, unit: 'sq_ft', sort: 11 },
-      { name: 'Carpet / Rug (By Sq Ft)', name_mr: 'Carpet / Rug (Per Sq Ft)', rate: 35, unit: 'sq_ft', sort: 12 },
-      { name: 'Other Items', name_mr: 'Other Items', rate: 50, unit: 'piece', sort: 13 }
+      { name: 'Ironing (Press)', default_rate: 12, unit: 'piece', sort: 1 },
+      { name: 'Dress', default_rate: 90, unit: 'piece', sort: 2 },
+      { name: 'Dry Cleaning', default_rate: 70, unit: 'piece', sort: 3 },
+      { name: 'Saree', default_rate: 80, unit: 'piece', sort: 4 },
+      { name: 'Saree (Dry Cleaning)', default_rate: 250, unit: 'piece', sort: 5 },
+      { name: 'Kurta (Dry Cleaning)', default_rate: 100, unit: 'piece', sort: 6 },
+      { name: 'Jacket', default_rate: 150, unit: 'piece', sort: 7 },
+      { name: 'Bedsheet (Ironing)', default_rate: 68, unit: 'piece', sort: 8 },
+      { name: 'Wash & Fold (By Weight)', default_rate: 70, unit: 'kg', sort: 9 },
+      { name: 'Wash & Iron (By Weight)', default_rate: 90, unit: 'kg', sort: 10 },
+      { name: 'Curtains (By Sq Ft)', default_rate: 8, unit: 'sq_ft', sort: 11 },
+      { name: 'Carpet / Rug (By Sq Ft)', default_rate: 25, unit: 'sq_ft', sort: 12 },
+      { name: 'Shoes Cleaning', default_rate: 250, unit: 'piece', sort: 13 },
+      { name: 'Helmet Cleaning', default_rate: 250, unit: 'piece', sort: 14 },
+      { name: 'Shirt', default_rate: 25, unit: 'piece', sort: 15 },
+      { name: 'T-Shirt', default_rate: 20, unit: 'piece', sort: 16 },
+      { name: 'Pant / Trouser', default_rate: 30, unit: 'piece', sort: 17 },
+      { name: 'Jeans', default_rate: 35, unit: 'piece', sort: 18 },
+      { name: 'Kurta', default_rate: 40, unit: 'piece', sort: 19 },
+      { name: 'Bed Sheet', default_rate: 70, unit: 'piece', sort: 20 },
+      { name: 'Other Items', default_rate: 50, unit: 'piece', sort: 21 }
     ];
 
     for (const cat of defaultCategories) {
       db.prepare(`
         INSERT INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at)
         VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-      `).run(crypto.randomUUID(), cat.name, cat.name_mr, cat.rate, cat.unit || 'piece', cat.sort, now);
+      `).run(crypto.randomUUID(), cat.name, cat.name, cat.default_rate, cat.unit || 'piece', cat.sort, now);
     }
   }
 

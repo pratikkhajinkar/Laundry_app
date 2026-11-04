@@ -367,6 +367,22 @@ export async function syncCategoryDeleteToCloud(categoryId: string): Promise<boo
 }
 
 /**
+ * Remove customer from Cloud Firestore
+ */
+export async function syncCustomerDeleteToCloud(customerId: string): Promise<boolean> {
+  if (!checkQuotaState()) return false;
+  try {
+    const docRef = doc(firestore, 'customers', sanitizeId(customerId));
+    await deleteDoc(docRef);
+    console.log(`[Cloud Firestore] Customer ${customerId} deleted from Firestore.`);
+    return true;
+  } catch (err) {
+    handleQuotaError(err);
+    return false;
+  }
+}
+
+/**
  * Sync app setting (e.g. laundry logo) to Cloud Firestore
  */
 export async function syncAppSettingsToCloud(key: string, value: string): Promise<boolean> {
@@ -477,6 +493,23 @@ export async function rehydrateFromFirestore(): Promise<{
       if (!data.name || !data.mobile) continue;
 
       const normMobile = String(data.mobile).trim().toLowerCase().replace(/^0+/, '').replace(/^\+91/, '');
+
+      // Check if this customer was explicitly deleted and tombstoned
+      try {
+        const isCustTombstoned = sqliteDb.prepare(`
+          SELECT id FROM deleted_customer_tombstones 
+          WHERE id = ? OR mobile = ? OR mobile = ?
+          LIMIT 1
+        `).get(id, data.mobile, normMobile);
+
+        if (isCustTombstoned) {
+          deleteDoc(docItem.ref).catch(() => {});
+          continue;
+        }
+      } catch (tombErr) {
+        // Table might not exist yet during edge conditions
+      }
+
       const docTime = new Date(data.updated_at || data.created_at || 0).getTime();
       
       const existingInMap = latestCloudCustomers.get(normMobile);
@@ -836,6 +869,25 @@ export async function rehydrateFromFirestore(): Promise<{
         const data = docItem.data();
         const id = data.id || docItem.id;
         if (!data.name) continue;
+
+        // Check if this category was explicitly deleted or tombstoned or contains legacy Marathi tags
+        try {
+          const isTombstoned = sqliteDb.prepare(`
+            SELECT id FROM deleted_category_tombstones 
+            WHERE id = ? OR name = ?
+            LIMIT 1
+          `).get(id, data.name);
+
+          const hasLegacyMarathi = /[\u0900-\u097F]/.test(data.name || '') || /[\u0900-\u097F]/.test(data.name_mr || '');
+
+          if (isTombstoned || hasLegacyMarathi) {
+            // Delete old data from Firestore so it never returns
+            deleteDoc(docItem.ref).catch(() => {});
+            continue;
+          }
+        } catch (tombErr) {
+          // Ignore if table not yet initialized
+        }
 
         const existing = sqliteDb.prepare('SELECT id FROM clothing_categories WHERE id = ? OR name = ?').get(id, data.name) as any;
         if (!existing) {

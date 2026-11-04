@@ -1,31 +1,188 @@
 {
   "summary": {
-    "total_orders": 39,
-    "total_customers": 9,
-    "total_invoices": 31,
-    "total_payments": 25,
-    "last_updated": "2026-11-03T12:28:12.502Z"
+    "total_orders": 40,
+    "total_customers": 10,
+    "total_categories": 21,
+    "total_invoices": 32,
+    "total_payments": 32,
+    "last_updated": "2026-11-04T11:43:45.634Z"
   },
+  "price_list": [
+    {
+      "id": "bb5a9082-236c-461e-988d-14e26da0bd43",
+      "name": "Ironing (Press)",
+      "default_rate": 12,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 1
+    },
+    {
+      "id": "3b966b0c-32c8-4121-9440-5fb60a0f3734",
+      "name": "Dress",
+      "default_rate": 90,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 2
+    },
+    {
+      "id": "230f445b-7b6f-49ea-af03-8e8c191bee0e",
+      "name": "Dry Cleaning",
+      "default_rate": 70,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 3
+    },
+    {
+      "id": "a356c020-1425-4452-9f78-fd0ffa24b917",
+      "name": "Saree",
+      "default_rate": 80,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 4
+    },
+    {
+      "id": "da3b91e6-ee23-4a29-a526-3d1b12cedcdb",
+      "name": "Saree (Dry Cleaning)",
+      "default_rate": 250,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 5
+    },
+    {
+      "id": "c8afd949-9b2d-4055-a49a-d0e8d2bc141e",
+      "name": "Kurta (Dry Cleaning)",
+      "default_rate": 100,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 6
+    },
+    {
+      "id": "95699673-f729-43a9-9320-c64aa9b7c648",
+      "name": "Jacket",
+      "default_rate": 150,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 7
+    },
+    {
+      "id": "a006e8b2-16e3-436f-8937-715aa56a8ec4",
+      "name": "Bedsheet (Ironing)",
+      "default_rate": 68,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 8
+    },
+    {
+      "id": "d630204e-91e8-4ca0-9bab-dbc54eff54da",
+      "name": "Wash & Fold (By Weight)",
+      "default_rate": 70,
+      "unit": "kg",
+      "is_active": 1,
+      "sort_order": 9
+    },
+    {
+      "id": "7c3018b1-f477-4f32-ba89-1afe20bf3faf",
+      "name": "Wash & Iron (By Weight)",
+      "default_rate": 90,
+      "unit": "kg",
+      "is_active": 1,
+      "sort_order": 10
+    },
+    {
+      "id": "43d1484c-9cd3-4b5e-adc5-37685a846e60",
+      "name": "Curtains (By Sq Ft)",
+      "default_rate": 8,
+      "unit": "sq_ft",
+      "is_active": 1,
+      "sort_order": 11
+    },
+    {
+      "id": "961f0c29-2e3a-4d49-a6a4-d2adcdae4f52",
+      "name": "Carpet / Rug (By Sq Ft)",
+      "default_rate": 25,
+      "unit": "sq_ft",
+      "is_active": 1,
+      "sort_order": 12
+    },
+    {
+      "id": "244e365e-d73e-47b6-ab1f-d4dc060d2d9f",
+      "name": "Shoes Cleaning",
+      "default_rate": 250,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 13
+    },
+    {
+      "id": "f7022b6a-6cd2-403f-95eb-ae1ff716e9d2",
+      "name": "Helmet Cleaning",
+      "default_rate": 250,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 14
+    },
+    {
+      "id": "00112233-4455-6677-8899-aabbccddeeff",
+      "name": "Shirt",
+      "default_rate": 25,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 15
+    },
+    {
+      "id": "11223344-5566-7788-99aa-bbccddeeff00",
+      "name": "T-Shirt",
+      "default_rate": 20,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 16
+    },
+    {
+      "id": "22334455-6677-8899-aabb-ccddeeff0011",
+      "name": "Pant / Trouser",
+      "default_rate": 30,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 17
+    },
+    {
+      "id": "33445566-7788-99aa-bbcc-ddeeff001122",
+      "name": "Jeans",
+      "default_rate": 35,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 18
+    },
+    {
+      "id": "44556677-8899-aabb-ccdd-eeff00112233",
+      "name": "Kurta",
+      "default_rate": 40,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 19
+    },
+    {
+      "id": "55667788-99aa-bbcc-ddee-ff0011223344",
+      "name": "Bed Sheet",
+      "default_rate": 70,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 20
+    },
+    {
+      "id": "4697daf4-6ada-403a-9c42-34da3fba9272",
+      "name": "Other Items",
+      "default_rate": 50,
+      "unit": "piece",
+      "is_active": 1,
+      "sort_order": 21
+    }
+  ],
   "customers": [
     {
-      "id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
-      "name": "Nayan",
-      "mobile": "7499428802",
-      "pickup_address": "Aurangabad has",
-      "area": "Warje"
-    },
-    {
-      "id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
-      "name": "Mt",
-      "mobile": "8483826902",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje"
-    },
-    {
-      "id": "23800fa3-304c-4b69-82a5-562606df6da9",
-      "name": "Mehta",
-      "mobile": "08484890123",
-      "pickup_address": "Bhunde vasti near arihant college",
+      "id": "d6f6eb9b-ec9c-44a9-899d-d6945e67d0fc",
+      "name": "Cavnsite A 208",
+      "mobile": "9209216604",
+      "pickup_address": "Cavnsite",
       "area": "Warje"
     },
     {
@@ -36,24 +193,24 @@
       "area": "Warje"
     },
     {
+      "id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "name": "Mehta",
+      "mobile": "08484890123",
+      "pickup_address": "Bhunde vasti near arihant college",
+      "area": "Warje"
+    },
+    {
+      "id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "name": "Mt",
+      "mobile": "8483826902",
+      "pickup_address": "Bhunde vasti near arihant college",
+      "area": "Warje"
+    },
+    {
       "id": "b569298e-8684-4873-a2cc-7561121282b6",
       "name": "Nanda bhagat",
       "mobile": "8830172695",
       "pickup_address": "Karvenagar",
-      "area": "Warje"
-    },
-    {
-      "id": "1c615731-3346-4571-bad2-e0fed8135409",
-      "name": "Tulip",
-      "mobile": "8125398272",
-      "pickup_address": "Flatno 4 varansi",
-      "area": "Warje"
-    },
-    {
-      "id": "4c52e2c2-46a6-4edb-9d31-e7da583232aa",
-      "name": "Sachin",
-      "mobile": "8482836590",
-      "pickup_address": "403 satya drey",
       "area": "Warje"
     },
     {
@@ -64,481 +221,434 @@
       "area": "Warje"
     },
     {
-      "id": "d6f6eb9b-ec9c-44a9-899d-d6945e67d0fc",
-      "name": "Cavnsite A 208",
-      "mobile": "9209216604",
-      "pickup_address": "Cavnsite",
+      "id": "4c52e2c2-46a6-4edb-9d31-e7da583232aa",
+      "name": "Sachin",
+      "mobile": "8482836590",
+      "pickup_address": "403 satya drey",
       "area": "Warje"
+    },
+    {
+      "id": "1c615731-3346-4571-bad2-e0fed8135409",
+      "name": "Tulip",
+      "mobile": "8125398272",
+      "pickup_address": "Flatno 4 varansi",
+      "area": "Warje"
+    },
+    {
+      "id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "name": "aditya",
+      "mobile": "7499428802",
+      "pickup_address": "777 plot",
+      "area": "Bavdhan"
+    },
+    {
+      "id": "0d8d1429-cdfd-485d-a0e5-5618989b0153",
+      "name": "pratik khajinkar",
+      "mobile": "9405463877",
+      "pickup_address": "dattawadi",
+      "area": "Bavdhan"
     }
   ],
   "orders": [
     {
+      "id": "8f5dc0f7-d087-48db-9c43-ba85c369430f",
+      "order_number": "ORD-2026-0044",
+      "customer_id": "fc615096-8bff-430a-98d2-0f59ad8f93a8",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
+      "status": "ready_for_delivery",
+      "final_total": 224,
+      "outstanding_amount": 224,
+      "pickup_date": "2026-11-03"
+    },
+    {
       "id": "e0a58b40-1da1-4304-92d8-72393dae40e2",
       "order_number": "ORD-2026-0043",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "d6f6eb9b-ec9c-44a9-899d-d6945e67d0fc",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "ready_for_delivery",
       "final_total": 390,
-      "amount_paid": 200,
       "outstanding_amount": 190,
-      "payment_status": "partially_paid",
-      "created_at": "2026-11-03T09:36:38.960Z"
+      "pickup_date": "2026-11-03"
     },
     {
       "id": "64398563-f65f-4dca-bb46-6a884e199d00",
       "order_number": "ORD-2026-0042",
-      "pickup_address": "Near atul nagar",
-      "area": "Warje",
+      "customer_id": "a1918ec4-d1d4-4059-96ed-ff41ce7ad1ba",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "assigned",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-03T03:10:02.473Z"
+      "pickup_date": "2026-11-03"
     },
     {
       "id": "a9facb66-2afd-481c-a2a7-b7e56048ec7a",
       "order_number": "ORD-2026-0041",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 460,
-      "amount_paid": 460,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-11-02T18:31:36.172Z"
+      "pickup_date": "2026-11-02"
     },
     {
       "id": "41b25bc8-28cf-45f5-a627-1bca5764c143",
       "order_number": "ORD-2026-0036-41b2",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "ready_for_delivery",
       "final_total": 212,
-      "amount_paid": 0,
       "outstanding_amount": 212,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-02T18:19:00.921Z"
+      "pickup_date": "2026-11-02"
     },
     {
       "id": "9a5e652c-ceee-40a7-adf6-d8889ecf93e2",
       "order_number": "ORD-2026-0039",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 991,
-      "amount_paid": 991,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-11-01T18:31:21.633Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "7325f3bc-2f65-4f78-9739-deab2481b8e1",
       "order_number": "ORD-2026-0029-7325",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "496212d0-9dc3-4b57-ab9f-d519f9e8cecc",
       "status": "ready_for_delivery",
       "final_total": 1420,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-01T18:28:02.086Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "9b417379-7c0c-4d6a-bd98-09a611df1b00",
       "order_number": "ORD-2026-0038",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "cancelled",
       "final_total": 120,
-      "amount_paid": 0,
       "outstanding_amount": 120,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-01T17:34:01.116Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "9d211af2-f740-4a20-856c-18b6501968e8",
       "order_number": "ORD-2026-0038-9d21",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "1c615731-3346-4571-bad2-e0fed8135409",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 240,
-      "amount_paid": 240,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-11-01T12:04:33.940Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "ea63ee31-c512-421a-99d1-0a7b93339bb3",
       "order_number": "ORD-2026-0035-ea63",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "ready_for_delivery",
       "final_total": 2615,
-      "amount_paid": 5230,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-11-01T10:02:56.029Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "be422c47-a149-46fe-8f87-f1947381182f",
       "order_number": "ORD-2026-0038-be42",
-      "pickup_address": "Karvenagar",
-      "area": "Warje",
+      "customer_id": "b569298e-8684-4873-a2cc-7561121282b6",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "picked_up",
       "final_total": 207,
-      "amount_paid": 0,
       "outstanding_amount": 207,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-01T09:19:30.803Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "043e74e0-3783-4f6c-b1dd-18c192b3e5b7",
       "order_number": "ORD-2026-0036",
-      "pickup_address": "Karvenagar",
-      "area": "Warje",
+      "customer_id": "b569298e-8684-4873-a2cc-7561121282b6",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "delivered",
       "final_total": 758.72,
-      "amount_paid": 758.72,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-11-01T08:52:16.715Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "4cdd514b-f55c-4b7d-a950-7087a255f9a6",
       "order_number": "ORD-2026-0028-4cdd",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 120,
-      "amount_paid": 0,
       "outstanding_amount": 120,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-01T07:57:21.704Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "c601b69b-02cd-42ae-9246-35a4f6fc2f0f",
       "order_number": "ORD-2026-0036-c601",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "33939b0a-ca1f-48cb-969c-f5ffa28449d0",
       "status": "assigned",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-11-01T06:49:30.407Z"
+      "pickup_date": "2026-11-01"
     },
     {
       "id": "70e9ef26-d1c7-42dd-ba40-d440baf50f51",
       "order_number": "ORD-2026-0035",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 240,
-      "amount_paid": 0,
       "outstanding_amount": 240,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:28:46.340Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "de76c94b-5039-45f0-b612-6bde1f87fc30",
       "order_number": "ORD-2026-0034",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 240,
-      "amount_paid": 0,
       "outstanding_amount": 240,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:28:39.253Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "af661b1e-4b39-450a-86f8-fbfc37aa51a2",
       "order_number": "ORD-2026-0033",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 240,
-      "amount_paid": 0,
       "outstanding_amount": 240,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:27:19.823Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "57076cc7-b91e-4d90-b6bb-bab40c5b151e",
       "order_number": "ORD-2026-0031",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:26:24.128Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "271e4aec-0ed1-426c-9b65-137dd961d6c8",
       "order_number": "ORD-2026-0030",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:26:23.099Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "c05678c4-f1ec-4762-80dc-9a557e4a2091",
       "order_number": "ORD-2026-0029",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:26:21.892Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "3325e6da-d11e-402c-b824-19c9606059a2",
       "order_number": "ORD-2026-0028",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:26:07.600Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "496928c4-7e3f-4a9f-87de-4e8501605431",
       "order_number": "ORD-2026-0027",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "out_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:26:05.722Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "c0a734a2-96cb-4504-9e28-439489e02832",
       "order_number": "ORD-2026-0026",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:25:51.208Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "cd1c3cb8-a969-4f57-87be-6e7442e900de",
       "order_number": "ORD-2026-0025",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 1076,
-      "amount_paid": 0,
       "outstanding_amount": 1076,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T10:25:49.549Z"
+      "pickup_date": "2026-10-31"
     },
     {
       "id": "a58e7a17-5f9d-4188-bdea-5c330bc8ea43",
       "order_number": "ORD-2026-0023",
-      "pickup_address": "Varanasi society",
-      "area": "Warje",
+      "customer_id": "b569298e-8684-4873-a2cc-7561121282b6",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "picked_up",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T09:59:52.274Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "3371c690-d6ea-404f-b7ff-2a9e62469bdd",
       "order_number": "ORD-2026-0022",
-      "pickup_address": "Varanasi society",
-      "area": "Warje",
+      "customer_id": "b569298e-8684-4873-a2cc-7561121282b6",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T09:57:46.555Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "894a7c17-1ab7-42ba-98d9-ad8d248102e0",
       "order_number": "ORD-2026-0019",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Bavdhan",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "ready_for_delivery",
       "final_total": 855,
-      "amount_paid": 855,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-30T09:18:35.718Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "88836a70-159a-4f2e-bb28-dc9729c34db1",
       "order_number": "ORD-2026-0018",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 105,
-      "amount_paid": 0,
       "outstanding_amount": 105,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T09:15:57.012Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "914d1b28-7aa3-4012-88f0-9f2d7c82f587",
       "order_number": "ORD-2026-0017",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Warje",
+      "customer_id": "23800fa3-304c-4b69-82a5-562606df6da9",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 340,
-      "amount_paid": 340,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-30T09:12:25.093Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "0c75fff6-4555-4c25-973e-0f7359fd4c7b",
       "order_number": "ORD-2026-0015",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Bavdhan",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 216,
-      "amount_paid": 0,
       "outstanding_amount": 216,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T08:49:06.957Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "9301af1d-665f-4e33-8356-91de91c46582",
       "order_number": "ORD-2026-0012",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Bavdhan",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 336,
-      "amount_paid": 0,
       "outstanding_amount": 336,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T08:20:00.854Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "74180964-182f-442a-b1ba-c8959ffc9741",
       "order_number": "ORD-2026-0011",
-      "pickup_address": "Bhunde vasti near arihant college",
-      "area": "Bavdhan",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 1107,
-      "amount_paid": 1107,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-30T07:53:08.449Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "b50d1c1c-7cd4-4a32-bd36-76d45c22c8b4",
       "order_number": "ORD-2026-0009",
-      "pickup_address": "Usuhahaha",
-      "area": "Warje",
+      "customer_id": "a6078a6b-f88c-4f99-a681-81a57925c3c2",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "pending",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T07:51:43.656Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "aa0cf28c-cebe-4e92-9ee6-eb048174381b",
       "order_number": "ORD-2026-0005",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "691dd33d-e1cf-42f4-b352-a51a5528d290",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 1700,
-      "amount_paid": 1700,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-30T05:32:21.444Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "0f3976b5-93ca-4f7e-9efa-3bbf891a2407",
       "order_number": "ORD-2026-0003",
-      "pickup_address": "Warje",
-      "area": "Bavdhan",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "pending",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-30T04:42:13.170Z"
+      "pickup_date": "2026-10-30"
     },
     {
       "id": "77f99d04-bc0f-4a57-9b3e-a9bac3460479",
       "order_number": "ORD-2026-0002",
-      "pickup_address": "Warje",
-      "area": "Bavdhan",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "arriving",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-29T10:18:33.316Z"
+      "pickup_date": "2026-10-29"
     },
     {
       "id": "67ff7a99-10fe-47f5-9059-aa562a8fbb71",
       "order_number": "ORD-2026-0002-67ff",
-      "pickup_address": "Warje",
-      "area": "Bavdhan",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "assigned",
       "final_total": 0,
-      "amount_paid": 0,
       "outstanding_amount": 0,
-      "payment_status": "unpaid",
-      "created_at": "2026-10-29T09:45:56.431Z"
+      "pickup_date": "2026-10-29"
     },
     {
       "id": "b237ed9b-f47f-429b-b248-5703700b123e",
       "order_number": "ORD-2026-0003-b237",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 240,
-      "amount_paid": 480,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-28T17:27:15.069Z"
+      "pickup_date": "2026-10-28"
     },
     {
       "id": "6167c6b3-5cd8-4cb7-a761-25f1455dcc78",
       "order_number": "ORD-2026-0002-6167",
-      "pickup_address": "",
-      "area": "Pune",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 320,
-      "amount_paid": 960,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-28T17:24:43.036Z"
+      "pickup_date": "2026-10-28"
     },
     {
       "id": "d0ed5545-e357-43ec-a172-d81091f7fa65",
       "order_number": "ORD-2026-0001",
-      "pickup_address": "Warje",
-      "area": "Bavdhan",
+      "customer_id": "bc4430bb-a5d0-4405-8c09-44ed1adc71ea",
+      "shop_id": "25365bb8-ba5c-4d1a-bc6d-9f88e861e655",
       "status": "delivered",
       "final_total": 250,
-      "amount_paid": 1000,
       "outstanding_amount": 0,
-      "payment_status": "paid",
-      "created_at": "2026-10-28T17:00:06.959Z"
+      "pickup_date": "2026-10-28"
     }
   ]
 }

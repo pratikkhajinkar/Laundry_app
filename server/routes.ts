@@ -6,6 +6,7 @@ import { db, backupDatabase, getAppSetting, setAppSetting, uploadsDir, dataDir, 
 import { 
   syncOrderToCloud, 
   syncCustomerToCloud, 
+  syncCustomerDeleteToCloud,
   syncPaymentToCloud, 
   syncDeliveryBoyToCloud,
   syncDeliveryBoyDeleteToCloud,
@@ -129,22 +130,34 @@ apiRouter.post('/setup/initialize', (req, res) => {
 
     // 3. Initial clothing categories with standard Pune laundry market rates
     const categories = [
-      { name: 'T-shirt', name_mr: 'T-shirt', rate: 20, sort: 1 },
-      { name: 'Shirt', name_mr: 'Shirt', rate: 25, sort: 2 },
-      { name: 'Pant', name_mr: 'Pant', rate: 30, sort: 3 },
-      { name: 'Jeans', name_mr: 'Jeans', rate: 35, sort: 4 },
-      { name: 'Dress', name_mr: 'Dress', rate: 80, sort: 5 },
-      { name: 'Kurta', name_mr: 'Kurta', rate: 40, sort: 6 },
-      { name: 'Saree', name_mr: 'Saree', rate: 90, sort: 7 },
-      { name: 'Bed Sheet', name_mr: 'Bed Sheet', rate: 70, sort: 8 },
-      { name: 'Other', name_mr: 'Other Clothes', rate: 50, sort: 9 }
+      { name: 'Ironing (Press)', rate: 12, unit: 'piece', sort: 1 },
+      { name: 'Dress', rate: 90, unit: 'piece', sort: 2 },
+      { name: 'Dry Cleaning', rate: 70, unit: 'piece', sort: 3 },
+      { name: 'Saree', rate: 80, unit: 'piece', sort: 4 },
+      { name: 'Saree (Dry Cleaning)', rate: 250, unit: 'piece', sort: 5 },
+      { name: 'Kurta (Dry Cleaning)', rate: 100, unit: 'piece', sort: 6 },
+      { name: 'Jacket', rate: 150, unit: 'piece', sort: 7 },
+      { name: 'Bedsheet (Ironing)', rate: 68, unit: 'piece', sort: 8 },
+      { name: 'Wash & Fold (By Weight)', rate: 70, unit: 'kg', sort: 9 },
+      { name: 'Wash & Iron (By Weight)', rate: 90, unit: 'kg', sort: 10 },
+      { name: 'Curtains (By Sq Ft)', rate: 8, unit: 'sq_ft', sort: 11 },
+      { name: 'Carpet / Rug (By Sq Ft)', rate: 25, unit: 'sq_ft', sort: 12 },
+      { name: 'Shoes Cleaning', rate: 250, unit: 'piece', sort: 13 },
+      { name: 'Helmet Cleaning', rate: 250, unit: 'piece', sort: 14 },
+      { name: 'Shirt', rate: 25, unit: 'piece', sort: 15 },
+      { name: 'T-Shirt', rate: 20, unit: 'piece', sort: 16 },
+      { name: 'Pant / Trouser', rate: 30, unit: 'piece', sort: 17 },
+      { name: 'Jeans', rate: 35, unit: 'piece', sort: 18 },
+      { name: 'Kurta', rate: 40, unit: 'piece', sort: 19 },
+      { name: 'Bed Sheet', rate: 70, unit: 'piece', sort: 20 },
+      { name: 'Other Items', rate: 50, unit: 'piece', sort: 21 }
     ];
 
     for (const cat of categories) {
       db.prepare(`
         INSERT OR IGNORE INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at)
-        VALUES (?, ?, ?, ?, 'piece', 1, ?, ?)
-      `).run(crypto.randomUUID(), cat.name, cat.name_mr, cat.rate, cat.sort, now);
+        VALUES (?, ?, ?, ?, ?, 1, ?, ?)
+      `).run(crypto.randomUUID(), cat.name, cat.name, cat.rate, cat.unit || 'piece', cat.sort, now);
     }
   }
 
@@ -549,6 +562,11 @@ apiRouter.put('/clothing-categories/:id', authenticate, requireRole(['admin']), 
 
 apiRouter.delete('/clothing-categories/:id', authenticate, requireRole(['admin']), (req: AuthenticatedRequest, res) => {
   const id = req.params.id;
+  const existing = db.prepare('SELECT id, name FROM clothing_categories WHERE id = ?').get(id) as { id: string, name: string } | undefined;
+  if (existing) {
+    db.prepare('INSERT OR REPLACE INTO deleted_category_tombstones (id, name, deleted_at) VALUES (?, ?, ?)')
+      .run(existing.id, existing.name, new Date().toISOString());
+  }
   db.prepare('DELETE FROM clothing_categories WHERE id = ?').run(id);
   backupDatabase();
   logAudit(req.user!.id, 'DELETE_CATEGORY', 'clothing_category', id);
@@ -630,15 +648,30 @@ apiRouter.get('/customers', authenticate, (req: AuthenticatedRequest, res) => {
 apiRouter.post('/customers', authenticate, (req: AuthenticatedRequest, res) => {
   try {
     const { name, mobile, email, pickup_address, delivery_address, area, building_name, flat_number, notes, shop_id } = req.body;
-    if (!name || !mobile || !pickup_address || !area) {
-      return res.status(400).json({ error: 'Customer Name, Mobile, Pickup Address, and Area are required.' });
+    if (!name || !mobile) {
+      return res.status(400).json({ error: 'Customer Name and Mobile number are required.' });
     }
 
     const cleanMobile = String(mobile).trim();
     const cleanName = String(name).trim();
-    const cleanPickup = String(pickup_address).trim();
-    const cleanDelivery = String(delivery_address || pickup_address).trim();
-    const cleanArea = String(area).trim();
+
+    // Determine shop_id
+    let targetShopId = req.user?.role === 'shop' ? req.user.shop_id : shop_id;
+    if (!targetShopId) {
+      const firstShop = db.prepare('SELECT id FROM shops LIMIT 1').get() as { id: string } | undefined;
+      targetShopId = firstShop ? firstShop.id : null;
+    }
+
+    // Default pickup address and area if not supplied
+    let defaultArea = 'Warje';
+    if (targetShopId) {
+      const shopRow = db.prepare('SELECT s.name, a.name as area_name FROM shops s LEFT JOIN service_areas a ON a.id = s.service_area_id WHERE s.id = ?').get(targetShopId) as any;
+      if (shopRow?.area_name) defaultArea = shopRow.area_name;
+    }
+
+    const cleanPickup = String(pickup_address || '').trim() || 'Store Counter / Shop Pickup';
+    const cleanDelivery = String(delivery_address || pickup_address || '').trim() || cleanPickup;
+    const cleanArea = String(area || '').trim() || defaultArea;
     const now = new Date().toISOString();
 
     // Check if customer with this mobile number already exists
@@ -666,13 +699,6 @@ apiRouter.post('/customers', authenticate, (req: AuthenticatedRequest, res) => {
       backupDatabase();
       syncCustomerToCloud(existingCust.id).catch(err => console.warn('[Cloud Sync] Customer update notice:', err));
       return res.json({ success: true, id: existingCust.id, isExisting: true });
-    }
-
-    // Determine shop_id
-    let targetShopId = req.user?.role === 'shop' ? req.user.shop_id : shop_id;
-    if (!targetShopId) {
-      const firstShop = db.prepare('SELECT id FROM shops LIMIT 1').get() as { id: string } | undefined;
-      targetShopId = firstShop ? firstShop.id : null;
     }
 
     const id = crypto.randomUUID();
@@ -720,6 +746,54 @@ apiRouter.put('/customers/:id', authenticate, (req: AuthenticatedRequest, res) =
   backupDatabase();
   syncCustomerToCloud(id).catch(err => console.warn('[Cloud Sync] Customer update notice:', err));
   res.json({ success: true });
+});
+
+apiRouter.delete('/customers/:id', authenticate, (req: AuthenticatedRequest, res) => {
+  try {
+    const custId = req.params.id;
+    const force = req.query.force === 'true';
+    const customer = db.prepare('SELECT id, name, mobile FROM customers WHERE id = ?').get(custId) as any;
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    const orderCount = (db.prepare('SELECT COUNT(*) as c FROM orders WHERE customer_id = ?').get(custId) as any).c;
+    if (orderCount > 0 && !force) {
+      return res.status(400).json({ 
+        error: `Customer has ${orderCount} existing order(s).`,
+        orderCount,
+        requiresForce: true 
+      });
+    }
+
+    if (orderCount > 0 && force) {
+      // Force cascade delete: order_photos, order_items, invoices, payments, and orders for this customer
+      const custOrders = db.prepare('SELECT id FROM orders WHERE customer_id = ?').all(custId) as { id: string }[];
+      for (const o of custOrders) {
+        db.prepare('DELETE FROM order_photos WHERE order_id = ?').run(o.id);
+        db.prepare('DELETE FROM order_items WHERE order_id = ?').run(o.id);
+        db.prepare('DELETE FROM invoices WHERE order_id = ?').run(o.id);
+        db.prepare('DELETE FROM payment_transactions WHERE order_id = ?').run(o.id);
+      }
+      db.prepare('DELETE FROM payment_transactions WHERE customer_id = ?').run(custId);
+      db.prepare('DELETE FROM invoices WHERE customer_id = ?').run(custId);
+      db.prepare('DELETE FROM orders WHERE customer_id = ?').run(custId);
+    }
+
+    // Insert tombstone so deleted customer never resurfaces from Firestore
+    db.prepare('INSERT OR REPLACE INTO deleted_customer_tombstones (id, mobile, deleted_at) VALUES (?, ?, ?)')
+      .run(customer.id, customer.mobile, new Date().toISOString());
+
+    db.prepare('DELETE FROM customers WHERE id = ?').run(custId);
+    backupDatabase();
+    logAudit(req.user!.id, 'DELETE_CUSTOMER', 'customer', custId, { name: customer.name, mobile: customer.mobile, force, orderCount });
+    syncCustomerDeleteToCloud(custId).catch(err => console.warn('[Cloud Sync] Customer delete notice:', err));
+
+    res.json({ success: true, message: 'Customer deleted successfully' });
+  } catch (err: any) {
+    console.error('[DELETE /customers/:id Error]:', err);
+    res.status(500).json({ error: err.message || 'Failed to delete customer' });
+  }
 });
 
 apiRouter.get('/customers/:id/due-orders', authenticate, (req: AuthenticatedRequest, res) => {
