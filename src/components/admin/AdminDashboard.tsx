@@ -109,13 +109,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
       <div className="bg-gradient-to-r from-[#0369A1] via-[#0284C7] to-[#38BDF8] rounded-3xl p-6 sm:p-8 text-white shadow-md shadow-sky-500/20 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <span className="text-xs font-black uppercase tracking-wider text-sky-100 bg-white/20 px-3 py-1 rounded-full">
-            फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स • Admin Control Center
+            Friends Laundry & Dry Cleaners • Admin Control Center
           </span>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight mt-2">
             Welcome, {user?.name}!
           </h1>
           <p className="text-xs sm:text-sm text-sky-50 mt-1.5 max-w-xl font-medium">
-            सर्व ४ शाखांचे १००% स्वतंत्र व्यवस्थापन. प्रत्येक शाखेच्या ऑर्डर्स, बाकी पेमेंट्स, कॅश हिशोब आणि कामाचे थेट नियंत्रण.
+            Strict branch-by-branch segregation. Direct control of each branch's orders, outstanding dues, cash reconciliation, and operations.
           </p>
         </div>
 
@@ -154,7 +154,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         <div className="flex items-center justify-between px-1">
           <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
             <Store className="w-4 h-4 text-sky-600" />
-            <span>शाखा निवडा (Select Branch — Each Branch Shown Separately)</span>
+            <span>Select Branch (Each Branch Shown Separately)</span>
           </span>
           <button
             type="button"
@@ -162,7 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
             className="text-xs font-bold text-sky-700 hover:text-sky-900 flex items-center gap-1 cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
-            <span>रिफ्रेश</span>
+            <span>Refresh</span>
           </button>
         </div>
 
@@ -204,10 +204,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
 
                 <div className="pt-2 border-t border-current/15 flex items-baseline justify-between mt-auto">
                   <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
-                    शाखा स्थिती:
+                    Branch Status:
                   </span>
                   <span className={`text-xs font-black ${isSelected ? 'text-white' : 'text-sky-700'}`}>
-                    {isSelected ? 'सध्या निवडलेली' : 'निवडण्यासाठी क्लिक करा'}
+                    {isSelected ? 'Active Selected' : 'Click to View'}
                   </span>
                 </div>
               </button>
@@ -226,7 +226,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                  निवडलेली शाखा (Active Selected Branch)
+                  Active Selected Branch
                 </span>
                 <span className="text-[10px] font-bold text-slate-500">{currentShop.code}</span>
               </div>
@@ -256,14 +256,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
               onClick={() => handleOpenShopOrders(currentShop.id)}
               className="px-3.5 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              या शाखेच्या सर्व ऑर्डर्स
+              All Branch Orders
             </button>
             <button
               type="button"
               onClick={() => handleOpenShopDues(currentShop.id)}
               className="px-3.5 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-black rounded-xl shadow-xs transition-colors cursor-pointer"
             >
-              या शाखेची बाकी रक्कम
+              Branch Due Balance
             </button>
           </div>
         </div>
@@ -277,7 +277,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">शाखा कोड</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Branch Code</span>
             <Building2 className="w-4 h-4 text-sky-700" />
           </div>
           <div className="text-2xl font-black text-slate-900">{currentShop?.code || 'ACTIVE'}</div>
@@ -292,7 +292,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">डिलिव्हरी बॉईज</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Delivery Boys</span>
             <Truck className="w-4 h-4 text-emerald-700" />
           </div>
           <div className="flex items-center gap-2">
@@ -313,7 +313,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs hover:border-sky-300 transition-all cursor-pointer"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">या शाखेचे आजचे काम</span>
+            <span className="text-xs font-bold uppercase tracking-wider">Today's Activity</span>
             <Package className="w-4 h-4 text-sky-600" />
           </div>
           <div className="text-2xl font-black text-slate-900">
@@ -330,14 +330,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-rose-200 shadow-xs hover:border-rose-400 transition-all cursor-pointer bg-rose-50/20"
         >
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-700">या शाखेची बाकी रक्कम</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-700">Branch Due Balance</span>
             <IndianRupee className="w-4 h-4 text-rose-600" />
           </div>
           <div className="text-2xl font-black text-rose-600">
             ₹{(stats?.totalOutstanding ?? 0).toFixed(2)}
           </div>
           <p className="text-[11px] text-rose-600 font-semibold mt-1">
-            {stats?.overdueDuesCount ?? 0} ग्राहक बिले प्रलंबित
+            {stats?.overdueDuesCount ?? 0} Customer dues pending
           </p>
         </div>
       </div>
@@ -347,11 +347,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         {/* Collections Today for this shop */}
         <div className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">आजची वसुली (Shop)</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Today's Collection</span>
             <span className="text-2xl font-black text-emerald-800 mt-1 block">
               ₹{(stats?.todayCollections ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-slate-500">या शाखेचे रोख / UPI संकलन</span>
+            <span className="text-[11px] text-slate-500">Cash / UPI collected today</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xl">
             ₹
@@ -364,11 +364,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-rose-200 shadow-xs flex items-center justify-between cursor-pointer hover:bg-rose-50/40 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 block">मुदत संपलेली बाकी</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-600 block">Overdue Dues</span>
             <span className="text-2xl font-black text-rose-700 mt-1 block">
               ₹{(stats?.overdueDuesAmount ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-rose-600 font-bold">{stats?.overdueDuesCount ?? 0} बिले मुदतबाहेर</span>
+            <span className="text-[11px] text-rose-600 font-bold">{stats?.overdueDuesCount ?? 0} Invoices overdue</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
             <AlertCircle className="w-6 h-6" />
@@ -381,11 +381,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-amber-300 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">कॅश हिशोब बाकी</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Pending Settlement</span>
             <span className="text-2xl font-black text-amber-700 mt-1 block">
               ₹{(stats?.pendingSettlements ?? 0).toFixed(2)}
             </span>
-            <span className="text-[11px] text-amber-800 font-semibold">डिलिव्हरी बॉईजकडील रोख</span>
+            <span className="text-[11px] text-amber-800 font-semibold">Cash with delivery boys</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-800 flex items-center justify-center font-bold">
             <Clock className="w-6 h-6" />
@@ -398,11 +398,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           className="bg-white p-5 rounded-3xl border border-sky-100 shadow-xs flex items-center justify-between cursor-pointer hover:border-sky-300 transition-colors"
         >
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">सक्रिय ऑर्डर्स</span>
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 block">Active Orders</span>
             <span className="text-2xl font-black text-slate-900 mt-1 block">
-              {stats?.pendingOrders ?? 0} ऑर्डर्स
+              {stats?.pendingOrders ?? 0} Orders
             </span>
-            <span className="text-[11px] text-slate-500">पिकअप, वॉशिंग किंवा डिलिव्हरी</span>
+            <span className="text-[11px] text-slate-500">In pickup, wash, or delivery</span>
           </div>
           <div className="w-12 h-12 rounded-2xl bg-sky-50 text-sky-700 flex items-center justify-center font-bold">
             <Package className="w-6 h-6" />
@@ -416,15 +416,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
           <div className="flex items-center justify-between">
             <div>
               <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 block">
-                या शाखेची थेट पेमेंट नोंद
+                Direct Branch Payment Logs
               </span>
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>आज जमा झालेली रक्कम ({currentShop?.name})</span>
+                <span>Today's Collections ({currentShop?.name})</span>
               </h3>
             </div>
             <span className="text-xs font-black text-emerald-700 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
-              एकूण: ₹{(stats?.todayCollections ?? 0).toFixed(2)}
+              Total: ₹{(stats?.todayCollections ?? 0).toFixed(2)}
             </span>
           </div>
 
@@ -443,7 +443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
                     <span className="font-extrabold text-slate-900">{tx.customer_name}</span>
                     <span className="text-[11px] text-slate-500 ml-1.5">({tx.order_number})</span>
                     <span className="text-[10px] text-slate-400 block sm:inline sm:ml-2">
-                      जमा घेणारे: <strong className="text-slate-600">{tx.collected_by}</strong>
+                      Collected by: <strong className="text-slate-600">{tx.collected_by}</strong>
                     </span>
                   </div>
                 </div>
@@ -466,7 +466,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-sm font-black text-slate-900">
-              {currentShop?.name} मधील ताज्या ऑर्डर्स
+              Recent Orders in {currentShop?.name}
             </h3>
             <p className="text-xs text-slate-500">
               Latest orders strictly from this selected branch
@@ -477,14 +477,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
             onClick={() => handleOpenShopOrders(selectedShopId)}
             className="text-xs font-black text-sky-700 hover:text-sky-900 flex items-center gap-1 cursor-pointer"
           >
-            <span>सर्व ऑर्डर्स पहा</span>
+            <span>View All Orders</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
         {recentOrders.length === 0 ? (
           <div className="text-center py-8 text-xs text-slate-500 font-medium">
-            या शाखेत कोणतीही ऑर्डर उपलब्ध नाही. नवीन ऑर्डर तयार करा.
+            No orders found for this branch. Create a new order.
           </div>
         ) : (
           <div className="divide-y divide-slate-100">
@@ -499,10 +499,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onNavigate, onOp
                     <span className="text-[11px] text-slate-500">({o.area})</span>
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1">
-                    शाखा: <strong>{o.shop_name}</strong> • ड्रायव्हर: {o.delivery_boy_name || 'अद्याप दिलेला नाही'}
+                    Branch: <strong>{o.shop_name}</strong> • Driver: {o.delivery_boy_name || 'Not assigned'}
                     {(o.outstanding_amount || 0) > 0 && (
                       <span className="ml-2 text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
-                        बाकी: ₹{o.outstanding_amount.toFixed(2)}
+                        Due: ₹{o.outstanding_amount.toFixed(2)}
                       </span>
                     )}
                   </div>

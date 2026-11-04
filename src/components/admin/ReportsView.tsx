@@ -107,7 +107,7 @@ export const ReportsView: React.FC = () => {
       {user?.role === 'admin' && shops.length > 0 && (
         <div className="space-y-2">
           <span className="text-xs font-black uppercase tracking-wider text-slate-600 block">
-            शाखा निवडा (Select Branch for Report)
+            Select Branch for Report
           </span>
           <div className="flex items-center gap-2 overflow-x-auto pb-1">
             {shops.map(shop => {

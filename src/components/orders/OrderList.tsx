@@ -179,14 +179,14 @@ export const OrderList: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Package className="w-6 h-6 text-sky-600" />
-              <span>शाखा-वार ऑर्डर्स (Shop-Wise Orders)</span>
+              <span>Shop-Wise Orders</span>
             </h1>
             <span className="text-xs font-black px-3 py-1 rounded-full bg-sky-100 text-sky-800 border border-sky-200">
-              {orders.length} एकूण ऑर्डर्स (Total)
+              {orders.length} Total Orders
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            प्रत्येक शाखेच्या ऑर्डर्स स्वतंत्रपणे व्यवस्थापित करा. कोणत्याही शाखेच्या ऑर्डर्स मिक्स होत नाहीत.
+            Manage orders branch by branch. Each branch is strictly segregated with zero mixing.
           </p>
         </div>
 
@@ -195,7 +195,7 @@ export const OrderList: React.FC = () => {
             type="button"
             onClick={fetchOrders}
             className="p-2.5 text-slate-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 rounded-2xl transition-colors border border-sky-100 cursor-pointer shadow-xs"
-            title="रिफ्रेश करा / Refresh"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -230,10 +230,10 @@ export const OrderList: React.FC = () => {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <Store className="w-4 h-4 text-sky-600" />
-              <span>शाखा निवडा (Select Shop Branch — Zero Mixing)</span>
+              <span>Select Shop Branch</span>
             </span>
             <span className="text-[11px] font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
-              प्रत्येक शाखेच्या स्वतंत्र ऑर्डर्स
+              Zero Mixing • Dedicated Orders
             </span>
           </div>
 
@@ -274,10 +274,10 @@ export const OrderList: React.FC = () => {
 
                   <div className="pt-2 border-t border-current/15 flex items-baseline justify-between mt-auto">
                     <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
-                      शाखा स्थिती:
+                      Branch Status:
                     </span>
                     <span className={`text-xs font-black ${isSelected ? 'text-sky-100' : 'text-sky-700'}`}>
-                      {isSelected ? 'सध्या निवडलेली' : 'निवडण्यासाठी क्लिक करा'}
+                      {isSelected ? 'Active Selected' : 'Click to View'}
                     </span>
                   </div>
                 </button>
@@ -296,7 +296,7 @@ export const OrderList: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                निवडलेली शाखा (Active Selected Branch)
+                Active Selected Branch
               </span>
               {currentShop?.code && (
                 <span className="text-[10px] font-bold text-slate-500">
@@ -327,16 +327,16 @@ export const OrderList: React.FC = () => {
         <div className="flex items-center gap-4 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-sky-200 md:pl-5">
           <div>
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-              या शाखेतील एकूण ऑर्डर्स
+              Orders in This Branch
             </span>
             <span className="text-xl font-black text-slate-900">
-              {orders.length} ऑर्डर्स
+              {orders.length} Orders
             </span>
           </div>
 
           <div className="border-l border-sky-200 pl-4">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-              या शाखेची बाकी (Due)
+              Branch Due Balance
             </span>
             <span className="text-xl font-black text-rose-600">
               ₹{totalShopOutstanding.toFixed(2)} ({dueOrdersCount})
@@ -360,19 +360,19 @@ export const OrderList: React.FC = () => {
             }`}
           >
             <IndianRupee className="w-3.5 h-3.5" />
-            <span>🔴 फक्त बाकी ऑर्डर्स (Due Balance Only: {dueOrdersCount})</span>
+            <span>🔴 Due Balance Only ({dueOrdersCount})</span>
           </button>
 
           {[
-            { id: 'all', label: 'सर्व (All)' },
-            { id: 'pending', label: 'पेंडिंग (Pending)' },
-            { id: 'assigned', label: 'असाईन (Assigned)' },
-            { id: 'arriving', label: 'पोहोचत आहे (Arriving)' },
-            { id: 'picked_up', label: 'पिकअप झाले (Picked Up)' },
-            { id: 'in_processing', label: 'प्रोसेसिंग (In Processing)' },
-            { id: 'ready_for_delivery', label: 'तयार (Ready)' },
-            { id: 'out_for_delivery', label: 'डिलिव्हरीला निघाले' },
-            { id: 'delivered', label: 'डिलिव्हरी पूर्ण (Delivered)' }
+            { id: 'all', label: 'All' },
+            { id: 'pending', label: 'Pending' },
+            { id: 'assigned', label: 'Assigned' },
+            { id: 'arriving', label: 'Arriving' },
+            { id: 'picked_up', label: 'Picked Up' },
+            { id: 'in_processing', label: 'In Processing' },
+            { id: 'ready_for_delivery', label: 'Ready' },
+            { id: 'out_for_delivery', label: 'Out for Delivery' },
+            { id: 'delivered', label: 'Delivered' }
           ].map(tab => (
             <button
               key={tab.id}
@@ -396,7 +396,7 @@ export const OrderList: React.FC = () => {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="ऑर्डर क्र. (ORD-...), ग्राहक, मोबाईल, पत्ता किंवा ड्रायव्हरच्या नावाने शोधा..."
+            placeholder="Search by Order #, Customer, Mobile, Address, or Delivery Boy..."
             className="w-full pl-10 pr-4 py-3 bg-white border border-sky-100 rounded-2xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-sky-400 shadow-xs"
           />
         </div>
@@ -406,16 +406,16 @@ export const OrderList: React.FC = () => {
       {loading ? (
         <div className="bg-white rounded-3xl border border-sky-100 p-12 text-center shadow-sm">
           <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-xs font-bold text-slate-600">या शाखेच्या ऑर्डर्स लोड होत आहेत...</p>
+          <p className="text-xs font-bold text-slate-600">Loading branch orders...</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-3xl border border-sky-100 p-12 text-center shadow-sm">
           <Package className="w-12 h-12 text-sky-200 mx-auto mb-3" />
-          <h3 className="text-base font-extrabold text-slate-800">या शाखेत कोणतीही ऑर्डर सापडली नाही</h3>
+          <h3 className="text-base font-extrabold text-slate-800">No Orders Found for This Branch</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1 mb-4">
             {dueOnlyFilter 
-              ? 'या शाखेमध्ये सध्या कोणतीही बाकी रक्कम असलेली ऑर्डर नाही.' 
-              : 'निवडलेल्या फिल्टरनुसार ऑर्डर्स उपलब्ध नाहीत. नवीन ऑर्डर तयार करा.'}
+              ? 'There are no pending due balance orders for this branch.' 
+              : 'No orders match the selected filters for this branch. Create a new order.'}
           </p>
           {(user?.role === 'admin' || user?.role === 'shop') && (
             <div className="flex flex-wrap items-center justify-center gap-2">
@@ -425,7 +425,7 @@ export const OrderList: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black bg-sky-500 text-white rounded-xl shadow-sm shadow-sky-500/20 cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ Pickup तयार करा</span>
+                <span>+ Create Pickup</span>
               </button>
               <button
                 type="button"
@@ -433,7 +433,7 @@ export const OrderList: React.FC = () => {
                 className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black bg-[#0369A1] text-white rounded-xl shadow-sm cursor-pointer"
               >
                 <Truck className="w-4 h-4" />
-                <span>+ Delivery तयार करा</span>
+                <span>+ Create Delivery</span>
               </button>
             </div>
           )}
@@ -471,7 +471,7 @@ export const OrderList: React.FC = () => {
                     </div>
 
                     <div className="text-right">
-                      <span className="text-[10px] font-bold text-slate-500 block uppercase">एकूण बिल</span>
+                      <span className="text-[10px] font-bold text-slate-500 block uppercase">Total Bill</span>
                       <span className="text-lg font-black text-slate-950">
                         ₹{order.final_total.toFixed(2)}
                       </span>
@@ -481,7 +481,7 @@ export const OrderList: React.FC = () => {
                   {/* Details box */}
                   <div className="p-3 bg-sky-50/50 rounded-2xl border border-sky-100 text-xs space-y-1.5 my-3">
                     <div className="flex justify-between items-center text-slate-600">
-                      <span>शाखा (Branch):</span>
+                      <span>Branch:</span>
                       <span className="font-bold text-slate-800">{order.shop_name}</span>
                     </div>
 
@@ -495,14 +495,14 @@ export const OrderList: React.FC = () => {
                     </div>
 
                     <div className="flex justify-between items-center pt-1 border-t border-sky-100 text-slate-600">
-                      <span>पिकअप तारीख:</span>
+                      <span>Pickup Date:</span>
                       <span className="font-bold text-slate-900">{order.pickup_date}</span>
                     </div>
 
                     <div className="flex justify-between items-center text-slate-600">
-                      <span>डिलिव्हरी बॉय:</span>
+                      <span>Delivery Boy:</span>
                       <span className="font-bold text-slate-900">
-                        {order.delivery_boy_name || 'अद्याप दिलेला नाही'}
+                        {order.delivery_boy_name || 'Not Assigned'}
                       </span>
                     </div>
                   </div>
@@ -522,16 +522,16 @@ export const OrderList: React.FC = () => {
                         : 'bg-amber-100 text-amber-900 border border-amber-200'
                     }`}>
                       <Camera className="w-3 h-3" />
-                      {hasBothPhotos ? '२ फोटो उपलब्ध' : 'फोटो बाकी'}
+                      {hasBothPhotos ? '2 Photos Attached' : 'Photos Pending'}
                     </span>
 
                     {hasDue ? (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-black bg-rose-100 text-rose-800 border border-rose-200">
-                        बाकी: ₹{order.outstanding_amount.toFixed(2)}
+                        Due: ₹{order.outstanding_amount.toFixed(2)}
                       </span>
                     ) : (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        पूर्ण भरणा (Paid)
+                        Paid Full
                       </span>
                     )}
                   </div>
@@ -545,7 +545,7 @@ export const OrderList: React.FC = () => {
                     className="flex-1 py-2 px-3 text-xs font-bold text-slate-800 bg-sky-50 hover:bg-sky-100 rounded-xl transition-colors flex items-center justify-center gap-1.5 border border-sky-100 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5 text-sky-600" />
-                    <span>तपशील पहा</span>
+                    <span>View Details</span>
                   </button>
 
                   {order.invoice_number && (
@@ -553,10 +553,10 @@ export const OrderList: React.FC = () => {
                       type="button"
                       onClick={() => setViewInvoiceId(order.id)}
                       className="py-2 px-3 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 rounded-xl border border-emerald-200 transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                      title="बिल / इन्व्हॉईस पहा"
+                      title="View Invoice"
                     >
                       <Receipt className="w-3.5 h-3.5 text-emerald-600" />
-                      <span>बिल (Invoice)</span>
+                      <span>Invoice</span>
                     </button>
                   )}
                 </div>

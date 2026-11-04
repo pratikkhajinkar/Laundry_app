@@ -90,7 +90,6 @@ export const DuePaymentsView: React.FC = () => {
           return activeShopId;
         }
         if (loadedShops.length > 0) {
-          // Prefer shop with dues if any, otherwise first shop
           return loadedShops[0].id;
         }
         return '';
@@ -167,12 +166,12 @@ export const DuePaymentsView: React.FC = () => {
 
     const amount = parseFloat(payAmount);
     if (!amount || amount <= 0) {
-      setError('कृपया वैध रक्कम टाका / Please enter a valid payment amount.');
+      setError('Please enter a valid payment amount.');
       return;
     }
 
     if (amount > selectedItem.outstanding_balance + 0.01) {
-      setError(`रक्कम ₹${amount} ही बाकी रक्कम ₹${selectedItem.outstanding_balance.toFixed(2)} पेक्षा जास्त असू शकत नाही.`);
+      setError(`Amount ₹${amount} exceeds the balance due of ₹${selectedItem.outstanding_balance.toFixed(2)}.`);
       return;
     }
 
@@ -210,7 +209,7 @@ export const DuePaymentsView: React.FC = () => {
         });
       }
 
-      setSuccess(`✅ ₹${amount} ची रक्कम जमा झाली! नवीन बाकी: ₹${data.remainingBalance.toFixed(2)}`);
+      setSuccess(`✅ Payment of ₹${amount} recorded! New balance: ₹${data.remainingBalance.toFixed(2)}`);
       await Promise.all([fetchDuePayments(), fetchSummary()]);
 
       setTimeout(() => {
@@ -242,21 +241,21 @@ export const DuePaymentsView: React.FC = () => {
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <IndianRupee className="w-6 h-6 text-sky-600" />
-              <span>शाखा-वार बाकी ऑर्डर्स (Shop-Wise Due Orders)</span>
+              <span>Shop-Wise Due Orders & Payments</span>
             </h1>
             <span className="text-xs font-black px-3 py-1 rounded-full bg-rose-100 text-rose-800 border border-rose-200">
-              {filtered.length} बाकी ऑर्डर्स (Due)
+              {filtered.length} Due Orders
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            प्रत्येक शाखेची बाकी ऑर्डर्स व पेमेंट्स स्वतंत्रपणे दाखवली जातात. शाखा निवडून फक्त त्याच शाखेची बाकी रक्कम तपासा.
+            Track and collect outstanding balances branch by branch. Every shop is maintained 100% separately.
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-right">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-              या शाखेची एकूण बाकी (Shop Due)
+              Branch Total Due
             </span>
             <span className="text-2xl sm:text-3xl font-black text-rose-600">
               ₹{totalOutstanding.toFixed(2)}
@@ -267,7 +266,7 @@ export const DuePaymentsView: React.FC = () => {
             type="button"
             onClick={() => { fetchDuePayments(); fetchSummary(); }}
             className="p-3 text-slate-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 rounded-2xl transition-colors border border-sky-100 cursor-pointer shadow-xs"
-            title="ताजे आकडे लोड करा / Refresh"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -280,10 +279,10 @@ export const DuePaymentsView: React.FC = () => {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <Store className="w-4 h-4 text-sky-600" />
-              <span>शाखा निवडा (Select Shop Branch — Zero Mixing)</span>
+              <span>Select Branch (Zero Mixing)</span>
             </span>
             <span className="text-[11px] font-bold text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">
-              एकूण ४ शाखा
+              Total 4 Branches
             </span>
           </div>
 
@@ -333,7 +332,7 @@ export const DuePaymentsView: React.FC = () => {
 
                   <div className="pt-2 border-t border-current/15 flex items-baseline justify-between mt-auto">
                     <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
-                      एकूण बाकी:
+                      Total Due:
                     </span>
                     <span className={`text-base font-black ${
                       isSelected ? 'text-white' : dueAmount > 0 ? 'text-rose-600' : 'text-slate-700'
@@ -363,7 +362,7 @@ export const DuePaymentsView: React.FC = () => {
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-black uppercase tracking-wider text-sky-800 bg-sky-100 px-2 py-0.5 rounded-full border border-sky-200">
-                सध्या निवडलेली शाखा (Active Selected Branch)
+                Active Selected Branch
               </span>
               {currentShop?.code && (
                 <span className="text-[10px] font-bold text-slate-500">
@@ -394,14 +393,14 @@ export const DuePaymentsView: React.FC = () => {
         <div className="flex items-center gap-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 md:border-l border-sky-200 md:pl-5">
           <div className="text-left md:text-right">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-              शाखा बाकी हिशोब
+              Branch Outstanding
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-xl font-black text-rose-600">
                 ₹{totalOutstanding.toFixed(2)}
               </span>
               <span className="text-xs font-bold text-slate-500">
-                ({filtered.length} ऑर्डर्स)
+                ({filtered.length} orders)
               </span>
             </div>
           </div>
@@ -415,7 +414,7 @@ export const DuePaymentsView: React.FC = () => {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="ग्राहकाचे नाव, मोबाईल, बिल क्रमांक (INV-...) किंवा ऑर्डर क्रमांक शोधा..."
+          placeholder="Search by customer name, mobile, invoice # (INV-...), or order #..."
           className="w-full pl-10 pr-4 py-3 bg-white border border-sky-100 rounded-2xl text-xs font-medium text-slate-900 focus:ring-2 focus:ring-sky-400 shadow-xs"
         />
       </div>
@@ -424,14 +423,14 @@ export const DuePaymentsView: React.FC = () => {
       {loading ? (
         <div className="bg-white rounded-3xl border border-sky-100 p-12 text-center shadow-sm">
           <div className="w-8 h-8 border-4 border-sky-600 border-t-transparent rounded-full animate-spin mx-auto mb-2"></div>
-          <p className="text-xs font-bold text-slate-600">शाखेची बाकी ऑर्डर्स लोड होत आहेत...</p>
+          <p className="text-xs font-bold text-slate-600">Loading branch due payments...</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-white rounded-3xl border border-sky-100 p-12 text-center shadow-sm">
           <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-2" />
-          <h3 className="text-base font-extrabold text-slate-900">या शाखेमध्ये कोणतीही बाकी रक्कम नाही</h3>
+          <h3 className="text-base font-extrabold text-slate-900">No Outstanding Due Payments for This Branch</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-            {currentShop?.name || 'निवडलेल्या शाखेची'} सर्व बिले पूर्ण भरलेली आहेत अथवा शोध परिणामात कोणतीही ऑर्डर सापडली नाही.
+            All invoices for {currentShop?.name || 'this branch'} are fully settled or match no filters.
           </p>
         </div>
       ) : (
@@ -467,21 +466,21 @@ export const DuePaymentsView: React.FC = () => {
                 {/* Details box */}
                 <div className="p-3 bg-sky-50/50 rounded-2xl border border-sky-100 text-xs space-y-1.5 mb-3">
                   <div className="flex justify-between text-slate-600">
-                    <span>शाखा (Branch):</span>
+                    <span>Branch:</span>
                     <span className="font-bold text-slate-800">{item.shop_name}</span>
                   </div>
                   {item.customer_area && (
                     <div className="flex justify-between text-slate-600">
-                      <span>पत्ता / एरिया:</span>
+                      <span>Area / Address:</span>
                       <span className="font-bold text-slate-800">{item.customer_area}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-slate-600">
-                    <span>एकूण बिल (Total Bill):</span>
+                    <span>Total Bill:</span>
                     <span className="font-bold text-slate-900">₹{item.final_total.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between text-slate-600">
-                    <span>भरलेली रक्कम (Paid):</span>
+                    <span>Paid So Far:</span>
                     <span className="font-bold text-emerald-700">₹{item.amount_paid.toFixed(2)}</span>
                   </div>
                 </div>
@@ -491,15 +490,15 @@ export const DuePaymentsView: React.FC = () => {
               <div className="pt-3 border-t border-sky-100 flex items-center justify-between gap-2">
                 <a
                   href={`https://wa.me/91${item.customer_mobile.replace(/\D/g, '')}?text=${encodeURIComponent(
-                    `नमस्कार ${item.customer_name}, फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स (${item.shop_name}) मधील आपल्या ऑर्डर क्रमांक ${item.order_number} ची बाकी रक्कम ₹${item.outstanding_balance.toFixed(2)} आहे. कृपया डिलिव्हरीच्या वेळी किंवा ऑनलाईन UPI द्वारे अदा करावी. धन्यवाद! - फ्रेंड्स लॉन्ड्री`
+                    `Namaskar ${item.customer_name}, your laundry bill for ${item.order_number} (${item.shop_name}) has an outstanding balance of ₹${item.outstanding_balance.toFixed(2)}. Please pay at delivery or via UPI. Thank you! - Friends Laundry & Dry Cleaners`
                   )}`}
                   target="_blank"
                   rel="noreferrer"
                   className="p-2.5 bg-sky-50 hover:bg-sky-100 text-sky-800 rounded-2xl text-xs font-bold border border-sky-100 flex items-center gap-1 transition-colors"
-                  title="WhatsApp मेसेज पाठवा"
+                  title="Send WhatsApp Reminder"
                 >
                   <Send className="w-3.5 h-3.5 text-sky-600" />
-                  <span>स्मरणपत्र</span>
+                  <span>Reminder</span>
                 </a>
 
                 <button
@@ -508,7 +507,7 @@ export const DuePaymentsView: React.FC = () => {
                   className="flex-1 py-2.5 px-3 bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 text-white rounded-2xl text-xs font-black shadow-sm shadow-sky-500/25 flex items-center justify-center gap-1.5 transition-all cursor-pointer active:scale-98"
                 >
                   <IndianRupee className="w-3.5 h-3.5" />
-                  <span>रक्कम जमा करा ₹{item.outstanding_balance.toFixed(2)}</span>
+                  <span>Collect ₹{item.outstanding_balance.toFixed(2)}</span>
                 </button>
               </div>
             </div>
@@ -523,7 +522,7 @@ export const DuePaymentsView: React.FC = () => {
             <div className="bg-gradient-to-r from-sky-600 to-[#0369A1] p-5 text-white flex items-start justify-between">
               <div>
                 <span className="text-[10px] font-black uppercase tracking-wider bg-white/20 px-2.5 py-0.5 rounded-full">
-                  रक्कम जमा नोंदणी (Record Payment)
+                  Record Due Payment
                 </span>
                 <h3 className="text-lg font-black mt-1">{selectedItem.customer_name}</h3>
                 <p className="text-xs text-sky-100 mt-0.5">{selectedItem.order_number} • {selectedItem.invoice_number}</p>
@@ -540,11 +539,11 @@ export const DuePaymentsView: React.FC = () => {
             <div className="p-5 sm:p-6 space-y-4">
               <div className="p-4 rounded-2xl bg-sky-50/70 border border-sky-100 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block">बाकी रक्कम (Outstanding)</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Outstanding Balance</span>
                   <span className="text-2xl font-black text-rose-600">₹{selectedItem.outstanding_balance.toFixed(2)}</span>
                 </div>
                 <div className="text-right">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block">एकूण बिल</span>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase block">Total Bill</span>
                   <span className="text-sm font-bold text-slate-900">₹{selectedItem.final_total.toFixed(2)}</span>
                 </div>
               </div>
@@ -567,7 +566,7 @@ export const DuePaymentsView: React.FC = () => {
                 {/* Method selector */}
                 <div>
                   <label className="block text-xs font-black text-slate-700 uppercase mb-1.5">
-                    पेमेंट पद्धत निवडा *
+                    Select Payment Method *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     <button
@@ -580,7 +579,7 @@ export const DuePaymentsView: React.FC = () => {
                       }`}
                     >
                       <Banknote className="w-5 h-5 mb-1" />
-                      <span>रोख (Cash)</span>
+                      <span>Cash</span>
                     </button>
 
                     <button
@@ -606,7 +605,7 @@ export const DuePaymentsView: React.FC = () => {
                       }`}
                     >
                       <CreditCard className="w-5 h-5 mb-1" />
-                      <span>कार्ड / नेट</span>
+                      <span>Card / Net</span>
                     </button>
                   </div>
                 </div>
@@ -615,14 +614,14 @@ export const DuePaymentsView: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="text-xs font-black text-slate-700 uppercase">
-                      जमा झालेली रक्कम (₹) *
+                      Amount Collected (₹) *
                     </label>
                     <button
                       type="button"
                       onClick={() => setPayAmount(String(selectedItem.outstanding_balance))}
                       className="text-[11px] font-bold text-sky-600 hover:text-sky-800 underline cursor-pointer"
                     >
-                      पूर्ण बाकी (₹{selectedItem.outstanding_balance.toFixed(2)})
+                      Full Due (₹{selectedItem.outstanding_balance.toFixed(2)})
                     </button>
                   </div>
                   <div className="relative">
@@ -645,25 +644,25 @@ export const DuePaymentsView: React.FC = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      UPI Ref / पावती क्र.
+                      UPI Ref / Receipt #
                     </label>
                     <input
                       type="text"
                       value={payRef}
                       onChange={(e) => setPayRef(e.target.value)}
-                      placeholder="उदा. 439281729182"
+                      placeholder="e.g. 439281729182"
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-sky-500 focus:outline-hidden"
                     />
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">
-                      टीप (Notes)
+                      Notes
                     </label>
                     <input
                       type="text"
                       value={payNotes}
                       onChange={(e) => setPayNotes(e.target.value)}
-                      placeholder="उदा. बाकी रक्कम जमा"
+                      placeholder="e.g. Due collected"
                       className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:border-sky-500 focus:outline-hidden"
                     />
                   </div>
@@ -675,14 +674,14 @@ export const DuePaymentsView: React.FC = () => {
                     onClick={() => setSelectedItem(null)}
                     className="px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
                   >
-                    रद्द करा
+                    Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={submitting || !!success}
                     className="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-sky-500 to-sky-600 hover:from-sky-600 hover:to-sky-700 rounded-xl shadow-md shadow-sky-500/20 disabled:opacity-50 cursor-pointer active:scale-98"
                   >
-                    {submitting ? 'जमा होत आहे...' : `जमा करा ₹${payAmount || '0'}`}
+                    {submitting ? 'Processing...' : `Collect ₹${payAmount || '0'}`}
                   </button>
                 </div>
               </form>

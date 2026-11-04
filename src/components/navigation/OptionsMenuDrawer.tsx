@@ -60,7 +60,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        setSyncMsg(language === 'mr' ? 'क्लाऊडवर सुरक्षित सेव्ह झाले!' : 'Successfully saved to Cloud!');
+        setSyncMsg('Successfully saved to Cloud!');
       } else {
         setSyncMsg('Sync completed');
       }
@@ -73,17 +73,17 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
   };
 
   const navItems = [
-    { id: 'dashboard', label: language === 'mr' ? 'डॅशबोर्ड' : 'Dashboard', icon: LayoutDashboard, role: 'all' },
-    { id: 'master_editor', label: language === 'mr' ? 'A to Z मास्टर एडिटर' : 'A to Z Master Editor', icon: SlidersHorizontal, role: 'admin' },
-    { id: 'price_list', label: language === 'mr' ? 'कपड्यांचे दरपत्रक (Price List)' : 'Clothing Price List & Rates', icon: Tag, role: 'admin' },
-    { id: 'orders', label: language === 'mr' ? 'सर्व ऑर्डर्स (Orders)' : 'Orders Management', icon: Package, role: 'all' },
-    { id: 'customers', label: language === 'mr' ? 'ग्राहक यादी (Customers)' : 'Customer Directory', icon: Users, role: 'all' },
-    { id: 'live_delivery_boys', label: language === 'mr' ? 'डिलिव्हरी बॉईज (Delivery Fleet)' : 'Live Delivery Fleet', icon: Truck, role: 'admin' },
-    { id: 'due_payments', label: language === 'mr' ? 'बाकी रक्कम (Due Payments)' : 'Due Payments & Ledgers', icon: IndianRupee, role: 'all' },
-    { id: 'settlements', label: language === 'mr' ? 'कॅश हिशोब (Settlements)' : 'Cash Settlements', icon: Receipt, role: 'all' },
-    { id: 'shops', label: language === 'mr' ? 'सर्व शाखा व भाग (Shops & Areas)' : 'All 4 Shops & Service Areas', icon: Building2, role: 'admin' },
-    { id: 'reports', label: language === 'mr' ? 'रिपोर्ट्स (Reports)' : 'Reports & Analytics', icon: FileSpreadsheet, role: 'admin' },
-    { id: 'audit_logs', label: language === 'mr' ? 'ऑडिट ट्रेल (Audit Logs)' : 'Audit Trail Logs', icon: ShieldCheck, role: 'admin' },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, role: 'all' },
+    { id: 'master_editor', label: 'A to Z Master Editor', icon: SlidersHorizontal, role: 'admin' },
+    { id: 'price_list', label: 'Price List', icon: Tag, role: 'admin' },
+    { id: 'orders', label: 'Orders', icon: Package, role: 'all' },
+    { id: 'customers', label: 'Customers', icon: Users, role: 'all' },
+    { id: 'live_delivery_boys', label: 'Delivery Boys', icon: Truck, role: 'admin' },
+    { id: 'due_payments', label: 'Due Payments', icon: IndianRupee, role: 'all' },
+    { id: 'settlements', label: 'Cash Settlements', icon: Receipt, role: 'all' },
+    { id: 'shops', label: 'All 4 Shops & Areas', icon: Building2, role: 'admin' },
+    { id: 'reports', label: 'Reports', icon: FileSpreadsheet, role: 'admin' },
+    { id: 'audit_logs', label: 'Audit Trail', icon: ShieldCheck, role: 'admin' },
   ].filter(item => item.role === 'all' || item.role === user.role);
 
   return (
@@ -114,7 +114,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
               )}
               <div>
                 <h3 className="text-base font-black tracking-tight leading-tight">
-                  {language === 'mr' ? 'पर्याय मेनू' : 'Options & Navigation'}
+                  Options & Navigation
                 </h3>
                 <span className="text-xs text-sky-100 font-medium">
                   Friends Laundry & Dry Cleaners
@@ -151,7 +151,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
           {(user.role === 'admin' || user.role === 'shop') && (
             <div className="space-y-2 bg-sky-50/70 p-3 rounded-2xl border border-sky-150">
               <span className="text-[11px] font-black uppercase tracking-wider text-sky-800 block mb-1">
-                ⚡ {language === 'mr' ? 'झटपट ऑर्डर' : 'Quick Actions'}
+                ⚡ Quick Actions
               </span>
 
               <button
@@ -164,7 +164,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
               >
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4 text-amber-300 fill-amber-300" />
-                  <span>{language === 'mr' ? '⚡ १-क्लिक क्विक ऑर्डर' : '⚡ 1-Click Quick Order'}</span>
+                  <span>⚡ 1-Click Quick Order</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-white/70" />
               </button>
@@ -199,7 +199,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
           {/* Navigation Items */}
           <div className="space-y-1">
             <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 block mb-1">
-              {language === 'mr' ? 'सर्व विभाग' : 'All Sections'}
+              All Sections
             </span>
             {navItems.map(item => {
               const Icon = item.icon;
@@ -232,7 +232,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
           {user.role === 'admin' && (
             <div className="pt-2 border-t border-slate-100">
               <span className="text-[11px] font-black uppercase tracking-wider text-slate-400 px-2 block mb-1">
-                {language === 'mr' ? 'ब्रँडिंग व लोगो' : 'Branding & Logo'}
+                Branding & Logo
               </span>
               <button
                 type="button"
@@ -245,7 +245,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
                 <div className="flex items-center gap-3">
                   <Camera className="w-5 h-5 text-sky-600" />
                   <div className="text-left">
-                    <span className="block font-bold">{language === 'mr' ? 'लॉन्ड्री लोगो बदला / सेट करा' : 'Change Laundry Logo'}</span>
+                    <span className="block font-bold">Change Laundry Logo</span>
                     <span className="text-[11px] text-slate-500 font-normal">Upload image or choose preset</span>
                   </div>
                 </div>
@@ -259,7 +259,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2 text-xs font-bold text-slate-700">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>{language === 'mr' ? 'क्लाऊड डेटाबेस सिंक' : 'Cloud Database Sync'}</span>
+                <span>Cloud Database Sync</span>
               </div>
               <button
                 type="button"
@@ -272,9 +272,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
               </button>
             </div>
             <p className="text-[11px] text-slate-500 leading-relaxed">
-              {language === 'mr' 
-                ? 'तुमचा सर्व डेटा आपोआप Google Cloud Firestore मध्ये सुरक्षित साठवला जात आहे.' 
-                : 'All your orders, prices, and customers are auto-saved to Cloud Firestore.'}
+              All your orders, prices, and customers are auto-saved to Cloud Firestore.
             </p>
             {syncMsg && (
               <span className="text-xs font-bold text-emerald-700 block mt-1.5">{syncMsg}</span>
@@ -284,15 +282,11 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
 
         {/* Drawer Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 shrink-0 flex items-center justify-between gap-3">
-          {/* Language Toggle */}
-          <button
-            type="button"
-            onClick={() => setLanguage(language === 'mr' ? 'en' : 'mr')}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-200 rounded-xl transition-colors border border-slate-200 bg-white"
-          >
+          {/* Language Indicator */}
+          <div className="flex items-center gap-2 px-3 py-2 text-xs font-bold text-slate-700 rounded-xl border border-slate-200 bg-white">
             <Globe className="w-4 h-4 text-sky-600" />
-            <span>{language === 'mr' ? 'मराठी (Active)' : 'English (Active)'}</span>
-          </button>
+            <span>English (Active)</span>
+          </div>
 
           {/* Logout Button */}
           <button

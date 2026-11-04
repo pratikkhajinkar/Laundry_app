@@ -140,21 +140,21 @@ export const SettlementManager: React.FC = () => {
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               <Receipt className="w-6 h-6 text-sky-600" />
-              <span>शाखा-वार कॅश हिशोब (Shop Cash Settlements)</span>
+              <span>Shop Cash Settlements</span>
             </h1>
             <span className="text-xs font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-              {pendingList.length} बॅचेस बाकी
+              {pendingList.length} Batches Pending
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            डिलिव्हरी बॉईजने ग्राहकांकडून गोळा केलेली रोख रक्कम काउंटरवर जमा करण्याची शाखा-निहाय नोंद.
+            Cash collected by delivery boys from customers, reconciled and deposited by branch.
           </p>
         </div>
 
         <div className="flex items-center gap-4">
           <div className="text-right">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-              जमा होणे बाकी रोख (Pending Handover)
+              Pending Handover
             </span>
             <span className="text-2xl font-black text-amber-700">₹{totalPendingCash.toFixed(2)}</span>
           </div>
@@ -163,7 +163,7 @@ export const SettlementManager: React.FC = () => {
             type="button"
             onClick={fetchData}
             className="p-3 text-slate-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100 rounded-2xl transition-colors border border-sky-100 cursor-pointer shadow-xs"
-            title="रिफ्रेश करा / Refresh"
+            title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -176,7 +176,7 @@ export const SettlementManager: React.FC = () => {
           <div className="flex items-center justify-between px-1">
             <span className="text-xs font-black uppercase tracking-wider text-slate-600 flex items-center gap-1.5">
               <Store className="w-4 h-4 text-sky-600" />
-              <span>शाखा निवडा (Select Branch for Cash Reconciliation)</span>
+              <span>Select Branch for Cash Reconciliation</span>
             </span>
           </div>
 
@@ -220,10 +220,10 @@ export const SettlementManager: React.FC = () => {
 
                   <div className="pt-2 border-t border-current/15 flex items-baseline justify-between mt-auto">
                     <span className={`text-[11px] font-bold ${isSelected ? 'text-sky-100' : 'text-slate-500'}`}>
-                      स्थिती:
+                      Status:
                     </span>
                     <span className={`text-xs font-black ${isSelected ? 'text-white' : 'text-sky-700'}`}>
-                      {isSelected ? 'सध्या निवडलेली' : 'निवडण्यासाठी क्लिक करा'}
+                      {isSelected ? 'Active Selected' : 'Click to View'}
                     </span>
                   </div>
                 </button>
@@ -237,15 +237,15 @@ export const SettlementManager: React.FC = () => {
       <div>
         <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
           <Clock className="w-4 h-4 text-amber-600" />
-          <span>डिलिव्हरी बॉईजकडून जमा होणे बाकी रोख रक्कम (Pending Handover)</span>
+          <span>Cash Pending Handover from Delivery Boys</span>
         </h2>
 
         {pendingList.length === 0 ? (
           <div className="bg-white rounded-3xl border border-sky-100 p-8 text-center shadow-xs">
             <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
-            <h3 className="text-sm font-bold text-slate-900">या शाखेमध्ये सर्व रोख रक्कम जमा झालेली आहे</h3>
+            <h3 className="text-sm font-bold text-slate-900">All Cash Reconciled for This Branch</h3>
             <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
-              सध्या कोणत्याही डिलिव्हरी बॉयकडे {currentShop?.name || 'या शाखेसाठी'} प्रलंबित रोख रक्कम शिल्लक नाही.
+              There is currently no pending cash remaining with delivery boys for {currentShop?.name || 'this branch'}.
             </p>
           </div>
         ) : (
@@ -268,12 +268,12 @@ export const SettlementManager: React.FC = () => {
 
                   <div className="p-3 bg-sky-50/50 rounded-2xl border border-sky-100 text-xs space-y-1 mb-4">
                     <div className="flex justify-between text-slate-600">
-                      <span>शाखा (Shop):</span>
+                      <span>Branch:</span>
                       <span className="font-bold text-slate-800">{item.shop_name}</span>
                     </div>
                     <div className="flex justify-between text-slate-600">
-                      <span>रोख ऑर्डर्स:</span>
-                      <span className="font-bold text-slate-800">{item.transaction_count} ऑर्डर्स</span>
+                      <span>Cash Orders:</span>
+                      <span className="font-bold text-slate-800">{item.transaction_count} Orders</span>
                     </div>
                   </div>
                 </div>
@@ -284,7 +284,7 @@ export const SettlementManager: React.FC = () => {
                   className="w-full py-2.5 px-4 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-2xl shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
                 >
                   <UserCheck className="w-4 h-4" />
-                  <span>हिशोब जमा नोंदवा (Confirm Handover)</span>
+                  <span>Confirm Cash Handover</span>
                 </button>
               </div>
             ))}
@@ -296,26 +296,26 @@ export const SettlementManager: React.FC = () => {
       <div>
         <h2 className="text-xs font-black uppercase tracking-wider text-slate-700 mb-3 flex items-center gap-2">
           <FileCheck className="w-4 h-4 text-emerald-700" />
-          <span>मागील जमा झालेल्या हिशोबांचा इतिहास (Settlement Audit History)</span>
+          <span>Settlement Audit History</span>
         </h2>
 
         <div className="bg-white rounded-3xl border border-sky-100 shadow-xs overflow-hidden">
           {historyList.length === 0 ? (
             <div className="p-8 text-center text-xs text-slate-500">
-              या शाखेमध्ये कोणताही मागील हिशोब उपलब्ध नाही.
+              No previous settlements recorded for this branch.
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-sky-50/70 border-b border-sky-100 text-[11px] font-black text-slate-600 uppercase tracking-wider">
-                    <th className="py-3 px-4">पावती #</th>
-                    <th className="py-3 px-4">शाखा (Shop)</th>
-                    <th className="py-3 px-4">डिलिव्हरी बॉय</th>
-                    <th className="py-3 px-4">जमा रक्कम</th>
-                    <th className="py-3 px-4">शिल्लक बाकी</th>
-                    <th className="py-3 px-4">जमा घेणारे</th>
-                    <th className="py-3 px-4">तारीख व वेळ</th>
+                    <th className="py-3 px-4">Receipt #</th>
+                    <th className="py-3 px-4">Branch</th>
+                    <th className="py-3 px-4">Delivery Boy</th>
+                    <th className="py-3 px-4">Settled Amount</th>
+                    <th className="py-3 px-4">Remaining Balance</th>
+                    <th className="py-3 px-4">Confirmed By</th>
+                    <th className="py-3 px-4">Date & Time</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -345,7 +345,7 @@ export const SettlementManager: React.FC = () => {
           <div className="bg-white rounded-3xl shadow-xl max-w-md w-full p-6 border border-sky-100 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-4 border-b border-sky-100">
               <div>
-                <span className="text-xs font-black text-emerald-800 uppercase">कॅश जमा नोंदणी</span>
+                <span className="text-xs font-black text-emerald-800 uppercase">Cash Deposit Confirmation</span>
                 <h3 className="text-base font-black text-slate-900">{selectedPending.delivery_boy_name}</h3>
               </div>
               <button
@@ -366,11 +366,11 @@ export const SettlementManager: React.FC = () => {
 
             <div className="my-4 p-3.5 bg-sky-50 rounded-2xl border border-sky-100 text-xs flex justify-between items-center">
               <div>
-                <span className="text-slate-500 block">एकूण गोळा केलेली रोख</span>
+                <span className="text-slate-500 block">Total Cash Collected</span>
                 <span className="text-slate-900 font-black text-base">₹{selectedPending.total_collected_pending.toFixed(2)}</span>
               </div>
               <div className="text-right">
-                <span className="text-slate-500 block">शाखा</span>
+                <span className="text-slate-500 block">Branch</span>
                 <span className="text-slate-900 font-bold">{selectedPending.shop_name}</span>
               </div>
             </div>
@@ -378,7 +378,7 @@ export const SettlementManager: React.FC = () => {
             <form onSubmit={handleConfirmSettlement} className="space-y-4">
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase mb-1">
-                  शाखेत जमा केलेली रक्कम (₹) *
+                  Cash Amount Deposited (₹) *
                 </label>
                 <div className="relative">
                   <IndianRupee className="w-4 h-4 absolute left-3 top-3 text-slate-400" />
@@ -388,7 +388,7 @@ export const SettlementManager: React.FC = () => {
                     required
                     value={settleAmount}
                     onChange={(e) => setSettleAmount(e.target.value)}
-                    placeholder="जमा रक्कम टाका"
+                    placeholder="Enter deposit amount"
                     className="w-full pl-9 pr-3 py-2.5 rounded-xl border border-slate-300 text-sm font-bold focus:ring-2 focus:ring-emerald-600"
                   />
                 </div>
@@ -396,13 +396,13 @@ export const SettlementManager: React.FC = () => {
 
               <div>
                 <label className="block text-xs font-black text-slate-700 uppercase mb-1">
-                  टीप / तपशील (Remarks)
+                  Remarks / Notes
                 </label>
                 <input
                   type="text"
                   value={settleNotes}
                   onChange={(e) => setSettleNotes(e.target.value)}
-                  placeholder="उदा. कॅशियरने पावती तपासून जमा घेतली"
+                  placeholder="e.g. Verified by cashier and deposited in register"
                   className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-600"
                 />
               </div>
@@ -413,7 +413,7 @@ export const SettlementManager: React.FC = () => {
                   onClick={() => setSelectedPending(null)}
                   className="px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl cursor-pointer"
                 >
-                  रद्द करा
+                  Cancel
                 </button>
                 <button
                   type="submit"
@@ -421,7 +421,7 @@ export const SettlementManager: React.FC = () => {
                   className="px-5 py-2.5 text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 rounded-xl shadow-xs disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-98"
                 >
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>{submitting ? 'जमा होत आहे...' : 'शाखा खात्यात जमा करा'}</span>
+                  <span>{submitting ? 'Confirming...' : 'Deposit to Branch'}</span>
                 </button>
               </div>
             </form>

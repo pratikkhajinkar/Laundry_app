@@ -563,7 +563,7 @@ apiRouter.delete('/clothing-categories/:id', authenticate, requireRole(['admin']
 apiRouter.get('/settings', (req, res) => {
   const logo = getAppSetting('laundry_logo', '');
   const name = getAppSetting('laundry_name', 'Friends Laundry & Dry Cleaners');
-  const nameMr = getAppSetting('laundry_name_mr', 'फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स');
+  const nameMr = getAppSetting('laundry_name_mr', 'Friends Laundry & Dry Cleaners');
   res.json({ logo, name, nameMr });
 });
 

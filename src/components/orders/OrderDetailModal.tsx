@@ -912,9 +912,9 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
                                     onChange={(e) => updateBillItem(item.id, { unit: e.target.value as any })}
                                     className="text-xs px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg font-bold text-slate-700"
                                   >
-                                    <option value="piece">Per Piece (नग)</option>
+                                    <option value="piece">Per Piece</option>
                                     <option value="sq_ft">Square Feet (Sq. Ft)</option>
-                                    <option value="kg">Per Kg (वजन)</option>
+                                    <option value="kg">Per Kg</option>
                                   </select>
                                 </div>
 

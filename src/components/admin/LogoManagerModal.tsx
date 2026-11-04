@@ -103,7 +103,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
         body: JSON.stringify({
           logo: logoPreview,
           name: 'Friends Laundry & Dry Cleaners',
-          nameMr: 'फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स'
+          nameMr: 'Friends Laundry & Dry Cleaners'
         })
       });
 
@@ -115,7 +115,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
         console.warn('[Firestore] Background logo sync notice:', err)
       );
 
-      setStatusMsg({ type: 'success', text: language === 'mr' ? 'लोगो यशस्वीरित्या सेव्ह झाला!' : 'Logo saved and persisted successfully!' });
+      setStatusMsg({ type: 'success', text: 'Logo saved and persisted successfully!' });
       onLogoUpdated(logoPreview);
       setTimeout(() => {
         onClose();
@@ -163,10 +163,10 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
             </div>
             <div>
               <h3 className="text-lg font-black tracking-tight">
-                {language === 'mr' ? 'लॉन्ड्री लोगो सेटिंग' : 'Laundry Logo & Branding'}
+                Laundry Logo & Branding
               </h3>
               <p className="text-xs text-sky-100">
-                {language === 'mr' ? 'फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्सचा लोगो सेट करा' : 'Configure Friends Laundry logo in the corner'}
+                Configure Friends Laundry logo in the corner
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
               </span>
               <div className="flex items-center gap-2 justify-center sm:justify-start">
                 <span className="text-base sm:text-lg font-black text-slate-900 truncate">
-                  {language === 'mr' ? 'फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स' : 'Friends Laundry & Dry Cleaners'}
+                  Friends Laundry & Dry Cleaners
                 </span>
               </div>
               <p className="text-xs text-slate-500 mt-0.5">
@@ -226,12 +226,12 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
           {/* Option 1: Upload from Device */}
           <div>
             <label className="block text-sm font-bold text-slate-850 mb-2">
-              {language === 'mr' ? '१. तुमच्या मोबाईल किंवा कॉम्प्युटरमधून लोगो निवडा' : '1. Upload Logo from Device'}
+              1. Upload Logo from Device
             </label>
             <label className="border-2 border-dashed border-sky-300 hover:border-sky-500 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer bg-sky-50/50 hover:bg-sky-50 transition-colors">
               <Upload className="w-7 h-7 text-sky-600 mb-2" />
               <span className="text-sm font-bold text-sky-900">
-                {language === 'mr' ? 'फोटो अपलोड करण्यासाठी येथे क्लिक करा' : 'Click to browse & upload image'}
+                Click to browse & upload image
               </span>
               <span className="text-xs text-slate-500 mt-1">PNG, JPG, SVG, WebP (auto-resized)</span>
               <input 
@@ -247,7 +247,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
           <div>
             <label className="block text-sm font-bold text-slate-850 mb-2 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-500" />
-              <span>{language === 'mr' ? '२. किंवा तयार लोगो निवडा' : '2. Or Choose a Ready-made Brand Logo'}</span>
+              <span>2. Or Choose a Ready-made Brand Logo</span>
             </label>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
               {presetLogos.map((p) => {
@@ -282,7 +282,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
               className="flex items-center gap-1.5 px-3 py-2 text-rose-600 hover:bg-rose-50 text-xs font-bold rounded-xl transition-colors"
             >
               <Trash2 className="w-4 h-4" />
-              <span>{language === 'mr' ? 'लोगो काढा' : 'Remove Logo'}</span>
+              <span>Remove Logo</span>
             </button>
           ) : <div />}
 
@@ -293,7 +293,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
               disabled={saving}
               className="px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-800 rounded-xl"
             >
-              {language === 'mr' ? 'रद्द करा' : 'Cancel'}
+              Cancel
             </button>
             <button
               type="button"
@@ -302,11 +302,11 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
               className="flex items-center gap-2 px-6 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-sm font-bold rounded-xl shadow-md shadow-sky-500/20 disabled:opacity-50 transition-colors"
             >
               {saving ? (
-                <span>{language === 'mr' ? 'सेव्ह करत आहे...' : 'Saving...'}</span>
+                <span>Saving...</span>
               ) : (
                 <>
                   <Check className="w-4 h-4" />
-                  <span>{language === 'mr' ? 'लोगो सेव्ह करा' : 'Save Logo'}</span>
+                  <span>Save Logo</span>
                 </>
               )}
             </button>

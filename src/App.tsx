@@ -71,25 +71,25 @@ const MainApp: React.FC = () => {
 
   // 4. Role Navigation Configuration (Desktop Left Sidebar)
   const adminNav = [
-    { id: 'dashboard', label: language === 'mr' ? 'डॅशबोर्ड' : t('dashboard'), icon: LayoutDashboard },
-    { id: 'master_editor', label: language === 'mr' ? 'A to Z मास्टर एडिटर' : 'A to Z Master Editor', icon: SlidersHorizontal },
-    { id: 'price_list', label: language === 'mr' ? 'कपड्यांचे दरपत्रक (Price List)' : t('priceList'), icon: Tag },
-    { id: 'orders', label: language === 'mr' ? 'ऑर्डर्स' : t('orders'), icon: Package },
-    { id: 'customers', label: language === 'mr' ? 'ग्राहक यादी' : t('customers'), icon: Users },
-    { id: 'live_delivery_boys', label: language === 'mr' ? 'डिलिव्हरी बॉईज' : t('liveDeliveryBoys'), icon: Truck },
-    { id: 'due_payments', label: language === 'mr' ? 'बाकी रक्कम' : t('duePayments'), icon: IndianRupee },
-    { id: 'settlements', label: language === 'mr' ? 'कॅश हिशोब' : t('settlements'), icon: Receipt },
-    { id: 'shops', label: language === 'mr' ? 'सर्व ४ शाखा व भाग' : 'All 4 Shops & Areas', icon: Building2 },
-    { id: 'reports', label: language === 'mr' ? 'रिपोर्ट्स' : t('reports'), icon: FileSpreadsheet },
-    { id: 'audit_logs', label: language === 'mr' ? 'ऑडिट ट्रेल' : 'Audit Trail', icon: ShieldCheck },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'master_editor', label: 'A to Z Master Editor', icon: SlidersHorizontal },
+    { id: 'price_list', label: 'Price List', icon: Tag },
+    { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'live_delivery_boys', label: 'Delivery Boys', icon: Truck },
+    { id: 'due_payments', label: 'Due Payments', icon: IndianRupee },
+    { id: 'settlements', label: 'Cash Settlements', icon: Receipt },
+    { id: 'shops', label: 'All 4 Shops & Areas', icon: Building2 },
+    { id: 'reports', label: 'Reports', icon: FileSpreadsheet },
+    { id: 'audit_logs', label: 'Audit Trail', icon: ShieldCheck },
   ];
 
   const shopNav = [
-    { id: 'dashboard', label: language === 'mr' ? 'डॅशबोर्ड' : t('dashboard'), icon: LayoutDashboard },
-    { id: 'orders', label: language === 'mr' ? 'ऑर्डर्स' : t('orders'), icon: Package },
-    { id: 'customers', label: language === 'mr' ? 'ग्राहक यादी' : t('customers'), icon: Users },
-    { id: 'due_payments', label: language === 'mr' ? 'बाकी रक्कम' : t('duePayments'), icon: IndianRupee },
-    { id: 'settlements', label: language === 'mr' ? 'कॅश हिशोब' : t('settlements'), icon: Receipt },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'orders', label: 'Orders', icon: Package },
+    { id: 'customers', label: 'Customers', icon: Users },
+    { id: 'due_payments', label: 'Due Payments', icon: IndianRupee },
+    { id: 'settlements', label: 'Cash Settlements', icon: Receipt },
   ];
 
   const currentNav = user.role === 'admin' ? adminNav : shopNav;
@@ -232,7 +232,7 @@ const MainApp: React.FC = () => {
             }`}
           >
             <LayoutDashboard className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">{language === 'mr' ? 'डॅशबोर्ड' : 'Home'}</span>
+            <span className="text-[11px]">Home</span>
           </button>
 
           <button
@@ -243,7 +243,7 @@ const MainApp: React.FC = () => {
             }`}
           >
             <Package className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">{language === 'mr' ? 'ऑर्डर्स' : 'Orders'}</span>
+            <span className="text-[11px]">Orders</span>
           </button>
 
           {/* Center Elevated Quick Create Button */}
@@ -259,7 +259,7 @@ const MainApp: React.FC = () => {
             <div className="w-13 h-13 rounded-full bg-gradient-to-tr from-sky-600 to-sky-400 flex items-center justify-center text-white shadow-xl shadow-sky-500/40 ring-4 ring-white">
               <Zap className="w-6 h-6 fill-white" />
             </div>
-            <span className="text-[10px] font-black text-sky-900 mt-0.5">{language === 'mr' ? '+ ऑर्डर' : '+ Order'}</span>
+            <span className="text-[10px] font-black text-sky-900 mt-0.5">+ Order</span>
           </button>
 
           <button
@@ -270,7 +270,7 @@ const MainApp: React.FC = () => {
             }`}
           >
             <Users className="w-5 h-5 mb-0.5" />
-            <span className="text-[11px]">{language === 'mr' ? 'ग्राहक' : 'Customers'}</span>
+            <span className="text-[11px]">Customers</span>
           </button>
 
           {/* Options Menu Button (Opens All Sections cleanly) */}
@@ -280,7 +280,7 @@ const MainApp: React.FC = () => {
             className="flex flex-col items-center justify-center py-1 px-2.5 rounded-xl text-slate-700 hover:text-sky-700 font-black transition-colors"
           >
             <Menu className="w-5 h-5 mb-0.5 text-sky-600" />
-            <span className="text-[11px]">{language === 'mr' ? 'मेनू (Menu)' : 'Menu'}</span>
+            <span className="text-[11px]">Menu</span>
           </button>
         </nav>
       )}

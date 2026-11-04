@@ -101,7 +101,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             >
               <div 
                 className="relative group shrink-0" 
-                title={user.role === 'admin' ? (language === 'mr' ? 'लोगो बदलण्यासाठी येथे क्लिक करा' : 'Click to change logo') : 'Friends Laundry Logo'}
+                title={user.role === 'admin' ? 'Click to change logo' : 'Friends Laundry Logo'}
                 onClick={(e) => {
                   if (user.role === 'admin') {
                     e.stopPropagation();
@@ -130,7 +130,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               {/* Laundry Title Inline Only - No Text Dropping Underneath */}
               <div className="flex items-center gap-2 whitespace-nowrap min-w-0">
                 <span className="text-base sm:text-xl font-black tracking-tight text-slate-900 whitespace-nowrap truncate max-w-[200px] sm:max-w-none">
-                  {language === 'mr' ? 'फ्रेंड्स लॉन्ड्री अँड ड्राय क्लीनर्स' : 'Friends Laundry & Dry Cleaners'}
+                  Friends Laundry & Dry Cleaners
                 </span>
                 <span className="hidden md:inline-block text-[11px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 border border-sky-200 shrink-0">
                   Live
@@ -168,7 +168,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     type="button"
                     onClick={() => setShowShopDropdown(prev => !prev)}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-black bg-sky-50 text-sky-900 border border-sky-300 hover:bg-sky-100 transition-all cursor-pointer shadow-2xs"
-                    title="सध्याची शाखा बदला / Switch Active Shop Branch"
+                    title="Switch Active Shop Branch"
                   >
                     <Store className="w-3.5 h-3.5 text-sky-600 shrink-0" />
                     <span className="truncate max-w-[110px] sm:max-w-[150px]">
@@ -180,7 +180,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {showShopDropdown && (
                     <div className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-xl border border-sky-100 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
                       <div className="px-3.5 py-1.5 border-b border-sky-50 text-[10px] font-black uppercase tracking-wider text-slate-400">
-                        शाखा निवडा (Select Branch)
+                        Select Branch
                       </div>
                       {shops.map(s => {
                         const isSelected = s.id === activeShopId;
@@ -220,7 +220,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 title="Open Options Menu"
               >
                 <Menu className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
-                <span>{language === 'mr' ? 'मेनू (Menu)' : 'Menu'}</span>
+                <span>Menu</span>
               </button>
 
               {/* Desktop quick logout */}

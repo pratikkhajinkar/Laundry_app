@@ -245,16 +245,14 @@ export const PriceListManager: React.FC = () => {
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              {language === 'mr' ? 'कपड्यांचे दरपत्रक (Price List)' : 'Clothing Price List & Rates'}
+              Clothing Price List & Rates
             </h1>
             <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-850">
-              {categories.filter(c => c.is_active === 1).length} {language === 'mr' ? 'सक्रिय दर' : 'Active Rates'}
+              {categories.filter(c => c.is_active === 1).length} Active Rates
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-            {language === 'mr' 
-              ? 'येथे जोडलेले नवीन आयटम आणि बदललेले दर कायमस्वरूपी डेटाबेस व क्लाऊडमध्ये सेव्ह राहतील.' 
-              : 'Add new items or modify rates. All changes and additions persist permanently in database & cloud.'}
+            Add new items or modify rates. All changes and additions persist permanently in database & cloud.
           </p>
         </div>
 
@@ -273,7 +271,7 @@ export const PriceListManager: React.FC = () => {
             className="flex items-center gap-2 px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white text-sm sm:text-base font-black rounded-2xl shadow-md shadow-emerald-700/20 transition-all hover:scale-[1.02]"
           >
             <Plus className="w-5 h-5" />
-            <span>{language === 'mr' ? '+ नवीन कपडा आयटम जोडा' : '+ Add Clothing Item'}</span>
+            <span>+ Add Clothing Item</span>
           </button>
         </div>
       </div>
@@ -285,7 +283,7 @@ export const PriceListManager: React.FC = () => {
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={language === 'mr' ? 'कपड्याचे नाव शोधा (उदा. Shirt, Jeans, Saree, Wash & Iron)...' : 'Search item name (e.g. Shirt, Jeans, Saree, Wash & Iron)...'}
+          placeholder="Search item name (e.g. Shirt, Jeans, Saree, Wash & Iron)..."
           className="w-full text-sm sm:text-base font-semibold text-slate-800 placeholder-slate-400 bg-transparent outline-none"
         />
         {searchQuery && (
@@ -305,12 +303,12 @@ export const PriceListManager: React.FC = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-slate-100/80 border-b border-slate-200 text-xs sm:text-sm font-black text-slate-700 uppercase tracking-wider">
-                <th className="py-4 px-4 sm:px-6">{language === 'mr' ? 'कपड्याचे नाव' : 'Item Name'}</th>
-                <th className="py-4 px-4">{language === 'mr' ? 'मराठी नाव' : 'Marathi Label'}</th>
-                <th className="py-4 px-4">{language === 'mr' ? 'दर (Rate)' : 'Rate (₹)'}</th>
-                <th className="py-4 px-4">{language === 'mr' ? 'युनिट' : 'Unit'}</th>
-                <th className="py-4 px-4">{language === 'mr' ? 'स्थिती' : 'Status'}</th>
-                <th className="py-4 px-4 sm:px-6 text-right">{language === 'mr' ? 'कृती' : 'Actions'}</th>
+                <th className="py-4 px-4 sm:px-6">Item Name</th>
+                <th className="py-4 px-4">Alternate Label</th>
+                <th className="py-4 px-4">Rate (₹)</th>
+                <th className="py-4 px-4">Unit</th>
+                <th className="py-4 px-4">Status</th>
+                <th className="py-4 px-4 sm:px-6 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -376,9 +374,9 @@ export const PriceListManager: React.FC = () => {
                           onChange={(e) => setEditUnit(e.target.value)}
                           className="px-2.5 py-2 border border-slate-300 rounded-xl text-sm font-bold bg-white"
                         >
-                          <option value="piece">piece (नग)</option>
-                          <option value="kg">kg (किलो)</option>
-                          <option value="sq_ft">sq_ft (चौरस फूट)</option>
+                          <option value="piece">piece</option>
+                          <option value="kg">kg</option>
+                          <option value="sq_ft">sq_ft</option>
                         </select>
                       ) : (
                         <span className="text-xs sm:text-sm font-bold px-2.5 py-1 bg-slate-100 text-slate-700 rounded-lg uppercase">
@@ -481,7 +479,7 @@ export const PriceListManager: React.FC = () => {
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-7 border border-slate-200">
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
               <h3 className="text-lg sm:text-xl font-black text-slate-900">
-                {language === 'mr' ? 'नवीन कपडा आयटम जोडा' : 'Add Clothing Item'}
+                Add Clothing Item
               </h3>
               <button
                 type="button"
@@ -516,13 +514,13 @@ export const PriceListManager: React.FC = () => {
 
               <div>
                 <label className="block text-xs sm:text-sm font-bold text-slate-800 uppercase mb-1.5">
-                  Marathi Label
+                  Alternate / Marathi Label (Optional)
                 </label>
                 <input
                   type="text"
                   value={newNameMr}
                   onChange={(e) => setNewNameMr(e.target.value)}
-                  placeholder="e.g. कोट / ब्लेझर / ब्लँकेट"
+                  placeholder="e.g. Coat / Blazer"
                   className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 text-base font-semibold focus:border-emerald-600 outline-none"
                 />
               </div>
@@ -551,9 +549,9 @@ export const PriceListManager: React.FC = () => {
                     onChange={(e) => setNewUnit(e.target.value)}
                     className="w-full px-4 py-3 rounded-2xl border-2 border-slate-200 text-base font-semibold focus:border-emerald-600 outline-none bg-white"
                   >
-                    <option value="piece">piece (नग)</option>
-                    <option value="kg">kg (किलो)</option>
-                    <option value="sq_ft">sq_ft (चौरस फूट)</option>
+                    <option value="piece">piece</option>
+                    <option value="kg">kg</option>
+                    <option value="sq_ft">sq_ft</option>
                   </select>
                 </div>
               </div>

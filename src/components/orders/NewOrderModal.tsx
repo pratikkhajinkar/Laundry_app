@@ -392,9 +392,9 @@ export const NewOrderModal: React.FC<NewOrderModalProps> = ({
     } catch (err: any) {
       const msg = err?.message || '';
       if (msg.includes('Unexpected token') || msg.includes('<!DOCTYPE') || msg.includes('is not valid JSON')) {
-        setError('सर्व्हर तात्पुरता व्यस्त आहे किंवा रीस्टार्ट होत आहे. कृपया २ सेकंद थांबा आणि पुन्हा प्रयत्न करा.');
+        setError('The server is temporarily busy or restarting. Please wait 2 seconds and try again.');
       } else {
-        setError(msg || 'ऑर्डर तयार करताना त्रुटी आली. कृपया पुन्हा प्रयत्न करा.');
+        setError(msg || 'An error occurred while creating order. Please try again.');
       }
     } finally {
       setSubmitting(false);
