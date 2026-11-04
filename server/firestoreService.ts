@@ -464,23 +464,43 @@ export async function rehydrateFromFirestore(): Promise<{
       console.warn('[Cloud Firestore] Delivery boys rehydration notice:', boyErr);
     }
 
-    // 1. REHYDRATE CUSTOMERS
+    // 1. REHYDRATE CUSTOMERS (Timestamp-protected: local address edits NEVER overwritten)
     const customersSnap = await getDocs(collection(firestore, 'customers'));
     const defaultShop = sqliteDb.prepare('SELECT id FROM shops LIMIT 1').get() as { id: string } | undefined;
     const defaultShopId = defaultShop?.id || null;
 
+    // Deduplicate cloud docs: group by normalized mobile and keep ONLY the latest cloud document per customer
+    const latestCloudCustomers = new Map<string, any>();
     for (const docItem of customersSnap.docs) {
       const data = docItem.data();
       const id = data.id || docItem.id;
       if (!data.name || !data.mobile) continue;
 
-      const existing = sqliteDb.prepare('SELECT id FROM customers WHERE id = ? OR mobile = ?').get(id, data.mobile) as any;
+      const normMobile = String(data.mobile).trim().toLowerCase().replace(/^0+/, '').replace(/^\+91/, '');
+      const docTime = new Date(data.updated_at || data.created_at || 0).getTime();
+      
+      const existingInMap = latestCloudCustomers.get(normMobile);
+      if (!existingInMap || docTime > existingInMap._docTime) {
+        latestCloudCustomers.set(normMobile, { ...data, id, _normMobile: normMobile, _docTime: docTime });
+      }
+    }
+
+    for (const data of latestCloudCustomers.values()) {
+      const normMobile = data._normMobile;
+      const existing = sqliteDb.prepare(`
+        SELECT * FROM customers 
+        WHERE id = ? 
+           OR mobile = ? 
+           OR REPLACE(LTRIM(mobile, '0'), '+91', '') = ?
+        LIMIT 1
+      `).get(data.id, data.mobile, normMobile) as any;
+
       if (!existing) {
         sqliteDb.prepare(`
           INSERT INTO customers (id, shop_id, name, mobile, email, pickup_address, delivery_address, area, building_name, flat_number, notes, created_at, updated_at)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `).run(
-          id,
+          data.id,
           data.shop_id || defaultShopId,
           data.name,
           data.mobile,
@@ -496,17 +516,32 @@ export async function rehydrateFromFirestore(): Promise<{
         );
         restoredCustomers++;
       } else {
-        // Update customer address/area safely without overwriting with empty strings
+        const localTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+        const cloudTime = data._docTime;
+
+        // If local SQLite is newer or equal, NEVER OVERWRITE! Local changes take precedence.
+        if (localTime >= cloudTime) {
+          if (localTime > cloudTime) {
+            syncCustomerToCloud(existing.id).catch(() => {});
+          }
+          continue;
+        }
+
+        // Only update from cloud if cloud document is strictly newer
         const cleanName = (data.name && String(data.name).trim()) || existing.name;
         const cleanPickup = (data.pickup_address && String(data.pickup_address).trim()) || existing.pickup_address;
         const cleanDelivery = (data.delivery_address && String(data.delivery_address).trim()) || existing.delivery_address || cleanPickup;
-        const cleanArea = (data.area && String(data.area).trim()) || existing.area || 'Pune';
+        const cleanArea = (data.area && String(data.area).trim()) || existing.area || 'Warje';
+        
         sqliteDb.prepare(`
           UPDATE customers
           SET name = ?,
               pickup_address = ?,
               delivery_address = ?,
               area = ?,
+              building_name = COALESCE(?, building_name),
+              flat_number = COALESCE(?, flat_number),
+              notes = COALESCE(?, notes),
               updated_at = ?
           WHERE id = ?
         `).run(
@@ -514,6 +549,9 @@ export async function rehydrateFromFirestore(): Promise<{
           cleanPickup,
           cleanDelivery,
           cleanArea,
+          data.building_name || null,
+          data.flat_number || null,
+          data.notes || null,
           data.updated_at || new Date().toISOString(),
           existing.id
         );
@@ -584,7 +622,7 @@ export async function rehydrateFromFirestore(): Promise<{
         }
         orderNumber = candidateOrderNumber;
 
-        const existingOrder = sqliteDb.prepare('SELECT id FROM orders WHERE id = ?').get(id) as any;
+        const existingOrder = sqliteDb.prepare('SELECT id, status, payment_status, updated_at, created_at, pickup_address, delivery_address, area FROM orders WHERE id = ?').get(id) as any;
         const subtotal = Number(data.subtotal) || Number(data.final_total) || 0;
         const deliveryCharge = Number(data.delivery_charge) || 0;
         const discount = Number(data.discount_amount) || 0;

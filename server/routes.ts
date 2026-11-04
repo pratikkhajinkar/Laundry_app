@@ -351,6 +351,7 @@ apiRouter.put('/shops/:id', authenticate, requireRole(['admin', 'shop']), (req: 
     WHERE id = ?
   `).run(name, service_area_id || null, address, phone, gst_number || null, upi_id || null, now, shopId);
 
+  backupDatabase();
   logAudit(req.user!.id, 'UPDATE_SHOP', 'shop', shopId, { name, phone });
   res.json({ success: true });
 });
@@ -658,6 +659,7 @@ apiRouter.post('/customers', authenticate, (req: AuthenticatedRequest, res) => {
         existingCust.id
       );
 
+      backupDatabase();
       syncCustomerToCloud(existingCust.id).catch(err => console.warn('[Cloud Sync] Customer update notice:', err));
       return res.json({ success: true, id: existingCust.id, isExisting: true });
     }
@@ -1450,6 +1452,16 @@ apiRouter.post('/orders/quick', authenticate, (req: AuthenticatedRequest, res) =
         effectivePickupAddress = customer.pickup_address || existingCust.pickup_address;
         effectiveDeliveryAddress = customer.delivery_address || existingCust.delivery_address || effectivePickupAddress;
         finalArea = customer.area || existingCust.area || 'Warje';
+
+        if (customer.pickup_address && customer.pickup_address.trim() !== existingCust.pickup_address) {
+          db.prepare(`
+            UPDATE customers 
+            SET pickup_address = ?, delivery_address = ?, area = ?, updated_at = ?
+            WHERE id = ?
+          `).run(effectivePickupAddress, effectiveDeliveryAddress, finalArea, now, existingCust.id);
+          backupDatabase();
+          syncCustomerToCloud(existingCust.id).catch(() => {});
+        }
       } else {
         finalCustomerId = crypto.randomUUID();
         finalCustomerName = customer.name.trim();
@@ -3525,6 +3537,7 @@ apiRouter.put('/admin/orders/:id', authenticate, requireRole(['admin']), (req: A
   }
 
   backupDatabase();
+  syncOrderToCloud(orderId).catch(() => {});
   logAudit(req.user!.id, 'MASTER_EDIT_ORDER', 'order', orderId, req.body);
   res.json({ success: true, message: 'Order updated successfully' });
 });
