@@ -784,7 +784,7 @@ export const LiveDeliveryBoys: React.FC = () => {
             </div>
 
             <p className="text-xs text-slate-500 leading-relaxed">
-              If this delivery personnel has historical orders, their account will be safely archived and set to <strong>Inactive</strong> so past delivery records and bills remain preserved. If they have active deliveries in progress, please reassign them first.
+              This action will permanently delete this delivery personnel and record a permanent tombstone so they never reappear, even across restarts or cloud synchronization. Any active orders will be safely unassigned and returned to pending.
             </p>
 
             <div className="pt-2 flex items-center justify-end gap-2.5">
@@ -803,7 +803,7 @@ export const LiveDeliveryBoys: React.FC = () => {
                 className="px-5 py-2.5 text-xs font-black text-white bg-rose-600 hover:bg-rose-700 rounded-xl shadow-sm shadow-rose-600/20 disabled:opacity-50 flex items-center gap-2 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span>{deletingBoy ? 'Processing...' : 'Confirm Remove'}</span>
+                <span>{deletingBoy ? 'Deleting...' : 'Permanently Delete'}</span>
               </button>
             </div>
           </div>

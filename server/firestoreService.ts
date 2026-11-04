@@ -304,11 +304,24 @@ export async function syncDeliveryBoyToCloud(boyId: string): Promise<boolean> {
 /**
  * Remove delivery boy document from Cloud Firestore on hard delete
  */
-export async function syncDeliveryBoyDeleteToCloud(boyId: string): Promise<boolean> {
+export async function syncDeliveryBoyDeleteToCloud(boyId: string, phone?: string): Promise<boolean> {
   if (!checkQuotaState()) return false;
   try {
     const docRef = doc(firestore, 'delivery_boys', sanitizeId(boyId));
     await deleteDoc(docRef);
+
+    if (phone) {
+      try {
+        const snap = await getDocs(collection(firestore, 'delivery_boys'));
+        for (const d of snap.docs) {
+          const dData = d.data();
+          if (dData.email_or_phone === phone || dData.phone === phone || d.id === boyId) {
+            await deleteDoc(d.ref).catch(() => {});
+          }
+        }
+      } catch {}
+    }
+
     console.log(`[Cloud Firestore] Delivery Boy ${boyId} removed from Firestore.`);
     return true;
   } catch (err) {
@@ -417,8 +430,20 @@ export async function rehydrateFromFirestore(): Promise<{
   let restoredCategories = 0;
 
   try {
-    // 0. REHYDRATE DELIVERY BOYS (Guarantees delivery boys never disappear)
+    // 0. REHYDRATE DELIVERY BOYS (Guarantees delivery boys never disappear unless tombstoned)
     try {
+      // First, purge any tombstoned delivery boys in SQLite
+      try {
+        sqliteDb.prepare(`
+          DELETE FROM users 
+          WHERE role = 'delivery' 
+            AND (
+              id IN (SELECT id FROM deleted_delivery_boy_tombstones)
+              OR (email_or_phone IS NOT NULL AND email_or_phone != '' AND email_or_phone IN (SELECT phone FROM deleted_delivery_boy_tombstones WHERE phone IS NOT NULL AND phone != ''))
+            )
+        `).run();
+      } catch {}
+
       const boysSnap = await getDocs(collection(firestore, 'delivery_boys'));
       const defaultPassword = hashPassword('delivery123');
 
@@ -437,6 +462,20 @@ export async function rehydrateFromFirestore(): Promise<{
         // Skip duplicates from legacy attempts
         if (seenPhones.has(phone)) continue;
         seenPhones.add(phone);
+
+        // Check if delivery boy was deleted and tombstoned
+        const isTombstoned = sqliteDb.prepare(`
+          SELECT id FROM deleted_delivery_boy_tombstones 
+          WHERE id = ? OR (phone IS NOT NULL AND phone != '' AND phone = ?)
+        `).get(id, phone);
+
+        if (isTombstoned) {
+          // Permanently remove from Cloud Firestore so it never resurrects
+          try {
+            await deleteDoc(doc(firestore, 'delivery_boys', sanitizeId(id)));
+          } catch {}
+          continue;
+        }
 
         // Check if user already exists by ID or by email_or_phone
         const existing = sqliteDb.prepare('SELECT id, role, status FROM users WHERE id = ? OR email_or_phone = ?').get(id, phone) as any;

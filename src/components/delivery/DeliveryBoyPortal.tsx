@@ -34,6 +34,8 @@ import { QuickOrderModal } from '../orders/QuickOrderModal.tsx';
 import { PickupProofModal } from '../orders/PickupProofModal.tsx';
 import { DeliveryRealBillModal } from './DeliveryRealBillModal.tsx';
 import { syncOrderToFirestore } from '../../services/firestoreSync.ts';
+import { CameraModal } from '../common/CameraModal.tsx';
+import { compressImage } from '../../utils/imageCompressor.ts';
 
 export const DeliveryBoyPortal: React.FC = () => {
   const { user, token, toggleAvailability } = useAuth();
@@ -73,6 +75,7 @@ export const DeliveryBoyPortal: React.FC = () => {
   const [pickupPhoto, setPickupPhoto] = useState<string | null>(null);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [showCameraModal, setShowCameraModal] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
 
   // Shortcut Piece Counts & Proof Notes for doorstep handover
@@ -174,19 +177,22 @@ export const DeliveryBoyPortal: React.FC = () => {
     }
   };
 
-  const handlePhotoUpload = async (file: File) => {
+  const handlePhotoUpload = async (fileOrBase64: File | string) => {
     if (!selectedOrder) return;
     setPhotoError(null);
     setUploadingPhoto(true);
 
     try {
-      const reader = new FileReader();
-      const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = () => resolve(reader.result as string);
-        reader.onerror = reject;
-      });
-      reader.readAsDataURL(file);
-      const base64Data = await base64Promise;
+      let base64Data: string;
+      if (typeof fileOrBase64 === 'string') {
+        base64Data = fileOrBase64;
+      } else {
+        base64Data = await compressImage(fileOrBase64, 1280, 1280, 0.82);
+      }
+
+      if (!base64Data) {
+        throw new Error('Failed to process photo. Please try clicking or uploading again.');
+      }
 
       const res = await fetch(`/api/orders/${selectedOrder.id}/photos`, {
         method: 'POST',
@@ -1036,32 +1042,61 @@ export const DeliveryBoyPortal: React.FC = () => {
                 {pickupPhoto ? (
                   <div className="relative rounded-lg overflow-hidden border border-slate-200 aspect-video bg-slate-100 mb-2.5">
                     <img src={pickupPhoto} alt="Pickup Proof" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setShowCameraModal(true)}
+                      className="absolute bottom-2 right-2 px-3 py-1 bg-black/70 hover:bg-black/90 text-white rounded-lg text-[11px] font-bold flex items-center gap-1 shadow"
+                    >
+                      <Camera className="w-3 h-3 text-sky-400" />
+                      <span>Retake</span>
+                    </button>
                   </div>
                 ) : (
-                  <div className="rounded-lg border-2 border-dashed border-slate-300 aspect-video flex flex-col items-center justify-center p-3 text-center mb-2.5 bg-slate-50">
-                    <Camera className="w-8 h-8 text-slate-400 mb-1" />
-                    <span className="text-xs text-slate-600 font-semibold">Take or upload pickup photo</span>
-                    <span className="text-[10px] text-slate-400">Mobile camera or file upload</span>
+                  <div 
+                    onClick={() => setShowCameraModal(true)}
+                    className="cursor-pointer hover:bg-sky-50/70 transition-all rounded-lg border-2 border-dashed border-sky-300 aspect-video flex flex-col items-center justify-center p-3 text-center mb-2.5 bg-sky-50/30 group"
+                  >
+                    <div className="w-12 h-12 rounded-full bg-white shadow-xs border border-sky-200 flex items-center justify-center mb-1 text-sky-600 group-hover:scale-105 transition-transform">
+                      <Camera className="w-6 h-6" />
+                    </div>
+                    <span className="text-xs text-sky-950 font-bold">Click or Upload Pickup Photo</span>
+                    <span className="text-[10px] text-sky-600 font-medium">Tap to open live camera or choose file</span>
                   </div>
                 )}
+
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => setShowCameraModal(true)}
+                    className="py-2.5 px-3 text-xs font-bold rounded-xl bg-sky-500 hover:bg-sky-600 text-white flex items-center justify-center gap-1.5 transition-all shadow-xs active:scale-98"
+                  >
+                    <Camera className="w-4 h-4" />
+                    <span>{uploadingPhoto ? 'Processing...' : pickupPhoto ? 'Retake Photo' : '📸 Click Photo'}</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => photoInputRef.current?.click()}
+                    className="py-2.5 px-3 text-xs font-bold rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 flex items-center justify-center gap-1.5 transition-colors active:scale-98"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Upload File</span>
+                  </button>
+                </div>
 
                 <input
                   type="file"
                   accept="image/*"
-                  capture="environment"
                   ref={photoInputRef}
                   className="hidden"
-                  onChange={(e) => e.target.files?.[0] && handlePhotoUpload(e.target.files[0])}
+                  onChange={async (e) => {
+                    const f = e.target.files?.[0];
+                    if (f) await handlePhotoUpload(f);
+                    if (e.target) e.target.value = '';
+                  }}
                 />
-                <button
-                  type="button"
-                  disabled={uploadingPhoto}
-                  onClick={() => photoInputRef.current?.click()}
-                  className="w-full py-2.5 px-3 text-xs font-bold rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-200 hover:bg-emerald-100 flex items-center justify-center gap-1.5 transition-colors"
-                >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>{uploadingPhoto ? 'Uploading Photo...' : pickupPhoto ? 'Retake / Change Photo' : 'Capture Pickup Photo'}</span>
-                </button>
               </div>
             </div>
 
@@ -1485,6 +1520,14 @@ export const DeliveryBoyPortal: React.FC = () => {
           }}
         />
       )}
+
+      {/* Live In-App Camera Viewfinder Modal */}
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={(b64) => handlePhotoUpload(b64)}
+        title="Capture Pickup Proof Photo"
+      />
     </div>
   );
 };

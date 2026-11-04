@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import type { Order, OrderItem, OrderPhoto, Invoice, PaymentTransaction, User, ClothingCategory } from '../../types/index.ts';
 import { 
@@ -6,6 +6,7 @@ import {
   MapPin, 
   Phone, 
   Camera, 
+  Upload,
   Receipt, 
   Clock, 
   Truck, 
@@ -31,6 +32,8 @@ import { InvoiceModal } from '../invoices/InvoiceModal.tsx';
 import { DuePaymentCollectionModal } from '../payments/DuePaymentCollectionModal.tsx';
 import { PickupProofModal } from './PickupProofModal.tsx';
 import { syncOrderToFirestore } from '../../services/firestoreSync.ts';
+import { CameraModal } from '../common/CameraModal.tsx';
+import { compressImage } from '../../utils/imageCompressor.ts';
 
 interface OrderDetailModalProps {
   orderId: string;
@@ -92,6 +95,53 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
   const [savingBill, setSavingBill] = useState(false);
   const [billSaveSuccess, setBillSaveSuccess] = useState<string | null>(null);
   const [billError, setBillError] = useState<string | null>(null);
+
+  // Photo upload states
+  const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const photoFileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoUpload = async (fileOrB64: File | string) => {
+    if (!orderId) return;
+    setPhotoError(null);
+    setUploadingPhoto(true);
+
+    try {
+      let base64Data: string;
+      if (typeof fileOrB64 === 'string') {
+        base64Data = fileOrB64;
+      } else {
+        base64Data = await compressImage(fileOrB64, 1280, 1280, 0.82);
+      }
+
+      if (!base64Data) {
+        throw new Error('Failed to process image');
+      }
+
+      const res = await fetch(`/api/orders/${orderId}/photos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          photo_type: 'bag',
+          image_data: base64Data
+        })
+      });
+
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Photo upload failed');
+
+      await fetchDetail();
+      onUpdate();
+    } catch (err: any) {
+      setPhotoError(err.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
 
   const fetchDetail = async () => {
     try {
@@ -1267,18 +1317,64 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
           {/* TAB 3: SINGLE PICKUP PHOTO PROOF */}
           {activeTab === 'photos' && (
             <div className="py-4 space-y-4">
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 text-xs flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>
-                  Single pickup photo proof captured at customer doorstep during garment handover.
-                </span>
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-emerald-950 text-xs flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+                  <span>
+                    Pickup photo proof captured during garment handover at doorstep or shop counter.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => setShowCameraModal(true)}
+                    className="py-1.5 px-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>{uploadingPhoto ? 'Processing...' : '📸 Click Photo'}</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={uploadingPhoto}
+                    onClick={() => photoFileInputRef.current?.click()}
+                    className="py-1.5 px-3 bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Upload File</span>
+                  </button>
+                </div>
               </div>
 
+              {photoError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs rounded-xl flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{photoError}</span>
+                </div>
+              )}
+
+              <input
+                ref={photoFileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (f) await handlePhotoUpload(f);
+                  if (e.target) e.target.value = '';
+                }}
+              />
+
               {photos.length === 0 ? (
-                <div className="p-10 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                  <Camera className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-                  <p className="font-semibold text-slate-600">No Pickup Photo Uploaded</p>
-                  <p className="text-slate-400 mt-0.5">Delivery boy did not upload a photo for this order.</p>
+                <div 
+                  onClick={() => setShowCameraModal(true)}
+                  className="p-10 text-center text-xs text-slate-400 bg-slate-50 hover:bg-sky-50/50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-sky-300 cursor-pointer transition-colors group"
+                >
+                  <div className="w-12 h-12 rounded-full bg-white shadow-xs border border-slate-200 flex items-center justify-center mx-auto mb-2 group-hover:scale-105 transition-transform">
+                    <Camera className="w-6 h-6 text-slate-400 group-hover:text-sky-600" />
+                  </div>
+                  <p className="font-semibold text-slate-700">No Pickup Photo Uploaded Yet</p>
+                  <p className="text-slate-400 mt-0.5">Click here or use the buttons above to capture or upload a proof photo.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1392,6 +1488,14 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
           }}
         />
       )}
+
+      {/* Live In-App Camera Viewfinder Modal */}
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handlePhotoUpload}
+        title="Capture Pickup Photo Proof"
+      />
     </>
   );
 };

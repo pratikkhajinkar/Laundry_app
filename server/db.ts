@@ -119,6 +119,12 @@ export function initDatabase() {
       deleted_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS deleted_delivery_boy_tombstones (
+      id TEXT PRIMARY KEY,
+      phone TEXT,
+      deleted_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY,
       shop_id TEXT,
@@ -447,6 +453,18 @@ export function ensureDefaultShopsAndAreas() {
       `).run(crypto.randomUUID(), cat.name, cat.name, cat.default_rate, cat.unit || 'piece', cat.sort, now);
     }
   }
+
+  // Purge any delivery boys or customers that were previously tombstoned
+  try {
+    db.prepare(`
+      DELETE FROM users 
+      WHERE role = 'delivery' 
+        AND (
+          id IN (SELECT id FROM deleted_delivery_boy_tombstones)
+          OR (email_or_phone IS NOT NULL AND email_or_phone != '' AND email_or_phone IN (SELECT phone FROM deleted_delivery_boy_tombstones WHERE phone IS NOT NULL AND phone != ''))
+        )
+    `).run();
+  } catch {}
 
   // Trigger initial backup snapshot for guaranteed durability
   backupDatabase();

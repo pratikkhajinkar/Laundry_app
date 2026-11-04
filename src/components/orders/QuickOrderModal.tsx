@@ -23,6 +23,8 @@ import {
   Eye
 } from 'lucide-react';
 import { syncOrderToFirestore, syncCustomerToFirestore } from '../../services/firestoreSync.ts';
+import { CameraModal } from '../common/CameraModal.tsx';
+import { compressImage } from '../../utils/imageCompressor.ts';
 
 interface QuickOrderModalProps {
   initialType?: 'pickup' | 'delivery';
@@ -85,6 +87,7 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   // Photos
   const [photos, setPhotos] = useState<PhotoItem[]>([]);
   const [previewModalUrl, setPreviewModalUrl] = useState<string | null>(null);
+  const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -197,29 +200,40 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, isCamera = false) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
 
-    Array.from(files).forEach(file => {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const base64Data = reader.result as string;
+    for (const file of Array.from(files)) {
+      const compressedData = await compressImage(file, 1280, 1280, 0.82);
+      if (compressedData) {
         setPhotos(prev => [
           ...prev,
           {
             id: Math.random().toString(36).substring(2, 9),
             photo_type: isCamera ? 'bag' : 'clothes',
-            image_data: base64Data,
-            previewUrl: base64Data,
+            image_data: compressedData,
+            previewUrl: compressedData,
             caption: isCamera ? 'Camera Photo' : file.name
           }
         ]);
-      };
-      reader.readAsDataURL(file);
-    });
+      }
+    }
 
     if (e.target) e.target.value = '';
+  };
+
+  const handleCameraCapture = (base64Data: string) => {
+    setPhotos(prev => [
+      ...prev,
+      {
+        id: Math.random().toString(36).substring(2, 9),
+        photo_type: 'bag',
+        image_data: base64Data,
+        previewUrl: base64Data,
+        caption: 'Camera Photo'
+      }
+    ]);
   };
 
   const handleRemovePhoto = (id: string) => {
@@ -824,11 +838,11 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <button
                 type="button"
-                onClick={() => cameraInputRef.current?.click()}
-                className="py-2.5 px-3 bg-white hover:bg-sky-50 border border-sky-200 rounded-xl text-xs font-bold text-sky-900 flex items-center justify-center gap-2 transition-all active:scale-98 shadow-2xs"
+                onClick={() => setShowCameraModal(true)}
+                className="py-2.5 px-3 bg-sky-500 hover:bg-sky-600 border border-sky-400 rounded-xl text-xs font-bold text-white flex items-center justify-center gap-2 transition-all active:scale-98 shadow-xs"
               >
-                <Camera className="w-4 h-4 text-sky-600" />
-                <span>Take Photo</span>
+                <Camera className="w-4 h-4" />
+                <span>📸 Take Photo</span>
               </button>
 
               <button
@@ -840,14 +854,6 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                 <span>Upload from Gallery</span>
               </button>
 
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                className="hidden"
-                onChange={(e) => handleFileChange(e, true)}
-              />
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1026,6 +1032,14 @@ export const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           </div>
         </div>
       )}
+
+      {/* In-App Live Camera Modal */}
+      <CameraModal
+        isOpen={showCameraModal}
+        onClose={() => setShowCameraModal(false)}
+        onCapture={handleCameraCapture}
+        title="Take Pickup Photo"
+      />
     </div>
   );
 };

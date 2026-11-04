@@ -376,7 +376,7 @@ apiRouter.put('/shops/:id', authenticate, requireRole(['admin', 'shop']), (req: 
 apiRouter.get('/delivery-boys', authenticate, (req: AuthenticatedRequest, res) => {
   updatePresenceStatus();
 
-  // Query delivery boys with real-time status and active jobs count
+  // Query delivery boys with real-time status and active jobs count (excluding tombstoned/deleted)
   const boys = db.prepare(`
     SELECT 
       u.id, u.name, u.email_or_phone, u.role, u.service_area_id, u.status, 
@@ -391,6 +391,9 @@ apiRouter.get('/delivery-boys', authenticate, (req: AuthenticatedRequest, res) =
     FROM users u
     LEFT JOIN service_areas a ON a.id = u.service_area_id
     WHERE u.role = 'delivery'
+      AND u.status != 'inactive'
+      AND u.id NOT IN (SELECT id FROM deleted_delivery_boy_tombstones)
+      AND (u.email_or_phone IS NULL OR u.email_or_phone NOT IN (SELECT phone FROM deleted_delivery_boy_tombstones WHERE phone IS NOT NULL AND phone != ''))
     ORDER BY u.is_online DESC, active_jobs_count ASC, u.name ASC
   `).all();
 
@@ -428,6 +431,12 @@ apiRouter.post('/delivery-boys', authenticate, requireRole(['admin']), (req: Aut
         VALUES (?, ?, ?, ?, ?, 'delivery', ?, 'active', 0, 0, ?, ?)
       `).run(targetId, trimmedName, trimmedPhone, hash, salt, service_area_id || null, now, now);
     }
+
+    // Clear any previous deletion tombstone so re-created staff account functions properly
+    db.prepare(`
+      DELETE FROM deleted_delivery_boy_tombstones 
+      WHERE id = ? OR (phone IS NOT NULL AND phone != '' AND phone = ?)
+    `).run(targetId, trimmedPhone);
 
     logAudit(req.user!.id, 'CREATE_OR_UPDATE_DELIVERY_BOY', 'user', targetId, { name: trimmedName, phoneOrEmail: trimmedPhone, area: service_area_id });
     
@@ -474,33 +483,53 @@ apiRouter.put('/delivery-boys/:id', authenticate, requireRole(['admin']), (req: 
 
 apiRouter.delete('/delivery-boys/:id', authenticate, requireRole(['admin']), (req: AuthenticatedRequest, res) => {
   const id = req.params.id;
-  const activeOrders = db.prepare(`
-    SELECT count(*) as count FROM orders 
+  const boy = db.prepare("SELECT id, name, email_or_phone FROM users WHERE id = ? AND role = 'delivery'").get(id) as any;
+  if (!boy) {
+    return res.status(404).json({ error: 'Delivery personnel not found' });
+  }
+
+  const now = new Date().toISOString();
+
+  // 1. Unassign any active orders so they are safely returned to pending / unassigned
+  db.prepare(`
+    UPDATE orders 
+    SET assigned_delivery_boy_id = NULL,
+        status = CASE WHEN status = 'assigned' THEN 'pending' ELSE status END,
+        updated_at = ?
     WHERE assigned_delivery_boy_id = ? AND status NOT IN ('delivered', 'failed', 'cancelled')
-  `).get(id) as { count: number };
+  `).run(now, id);
 
-  if (activeOrders.count > 0) {
-    return res.status(400).json({ 
-      error: `Cannot delete: delivery personnel has ${activeOrders.count} active order(s). Reassign them first or set account to inactive.` 
-    });
-  }
+  // 2. Unassign from completed or historical orders
+  db.prepare(`
+    UPDATE orders 
+    SET assigned_delivery_boy_id = NULL,
+        updated_at = ?
+    WHERE assigned_delivery_boy_id = ?
+  `).run(now, id);
 
-  const totalOrders = db.prepare(`SELECT count(*) as count FROM orders WHERE assigned_delivery_boy_id = ?`).get(id) as { count: number };
-  if (totalOrders.count > 0) {
-    const now = new Date().toISOString();
-    db.prepare(`UPDATE users SET status = 'inactive', is_online = 0, updated_at = ? WHERE id = ? AND role = 'delivery'`).run(now, id);
-    logAudit(req.user!.id, 'DEACTIVATE_DELIVERY_BOY', 'user', id, { reason: 'Archived due to historical orders' });
-    backupDatabase();
-    syncDeliveryBoyToCloud(id).catch(err => console.warn('[Cloud Firestore] Sync deactivation failed:', err));
-    return res.json({ success: true, message: 'Account deactivated to preserve order history.' });
-  }
+  // 3. Clear user sessions
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(id);
 
-  db.prepare(`DELETE FROM sessions WHERE user_id = ?`).run(id);
-  db.prepare(`DELETE FROM users WHERE id = ? AND role = 'delivery'`).run(id);
-  logAudit(req.user!.id, 'DELETE_DELIVERY_BOY', 'user', id);
+  // 4. Delete user record completely from users table
+  db.prepare("DELETE FROM users WHERE id = ? AND role = 'delivery'").run(id);
+
+  // 5. Insert permanent tombstone so it can NEVER be re-imported or resurrected
+  db.prepare(`
+    INSERT OR REPLACE INTO deleted_delivery_boy_tombstones (id, phone, deleted_at)
+    VALUES (?, ?, ?)
+  `).run(boy.id, boy.email_or_phone?.trim() || null, now);
+
+  logAudit(req.user!.id, 'DELETE_DELIVERY_BOY_PERMANENT', 'user', id, { name: boy.name, phone: boy.email_or_phone });
+
+  // 6. Persist changes to disk immediately
   backupDatabase();
-  syncDeliveryBoyDeleteToCloud(id).catch(err => console.warn('[Cloud Firestore] Sync delivery boy delete failed:', err));
-  res.json({ success: true, message: 'Delivery personnel deleted successfully.' });
+
+  // 7. Delete permanently from Cloud Firestore
+  syncDeliveryBoyDeleteToCloud(boy.id, boy.email_or_phone?.trim()).catch(err => {
+    console.warn('[Cloud Firestore] Sync delivery boy delete failed:', err);
+  });
+
+  res.json({ success: true, message: `Delivery personnel "${boy.name}" permanently deleted.` });
 });
 
 // -------------------------------------------------------------
