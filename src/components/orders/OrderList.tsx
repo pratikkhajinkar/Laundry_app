@@ -121,6 +121,14 @@ export const OrderList: React.FC = () => {
   }, [selectedShopId, fetchOrders]);
 
   useEffect(() => {
+    const onOrdersUpdated = () => {
+      if (selectedShopId) fetchOrders();
+    };
+    window.addEventListener('laundry-orders-updated', onOrdersUpdated);
+    return () => window.removeEventListener('laundry-orders-updated', onOrdersUpdated);
+  }, [selectedShopId, fetchOrders]);
+
+  useEffect(() => {
     if (activeShopId && activeShopId !== selectedShopId) {
       setSelectedShopId(activeShopId);
     }
@@ -441,7 +449,11 @@ export const OrderList: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map(order => {
-            const hasBothPhotos = (order.has_bag_photo || 0) > 0 && (order.has_clothes_photo || 0) > 0;
+            const photoCount = (order.has_bag_photo || 0) + (order.has_clothes_photo || 0);
+            const hasPickupPhotosField = Array.isArray(order.pickup_photos)
+              ? order.pickup_photos.length > 0
+              : Boolean(typeof order.pickup_photos === 'string' && order.pickup_photos.trim() && order.pickup_photos.trim() !== '[]');
+            const hasPickupPhoto = photoCount > 0 || hasPickupPhotosField;
             const hasDue = (order.outstanding_amount || 0) > 0;
 
             return (
@@ -517,12 +529,12 @@ export const OrderList: React.FC = () => {
                     )}
 
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-bold ${
-                      hasBothPhotos 
-                        ? 'bg-emerald-100 text-emerald-850 border border-emerald-200' 
+                      hasPickupPhoto 
+                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' 
                         : 'bg-amber-100 text-amber-900 border border-amber-200'
                     }`}>
                       <Camera className="w-3 h-3" />
-                      {hasBothPhotos ? '2 Photos Attached' : 'Photos Pending'}
+                      {hasPickupPhoto ? (photoCount > 1 ? `${photoCount} Photos Attached` : 'Photo Attached') : 'Photo Pending'}
                     </span>
 
                     {hasDue ? (

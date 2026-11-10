@@ -56,6 +56,13 @@ export const Navbar: React.FC<NavbarProps> = ({
         if (d?.logo) setLogoUrl(d.logo);
       })
       .catch(() => {});
+
+    const onLogoEvent = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (typeof detail === 'string') setLogoUrl(detail);
+    };
+    window.addEventListener('laundry-logo-updated', onLogoEvent);
+    return () => window.removeEventListener('laundry-logo-updated', onLogoEvent);
   }, []);
 
   if (!user) return null;
@@ -90,7 +97,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-xs w-full max-w-full overflow-hidden">
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-sky-100 shadow-xs w-full max-w-full overflow-visible">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-2 w-full">
             
@@ -254,7 +261,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <LogoManagerModal 
           currentLogo={logoUrl}
           onClose={() => setShowLogoModal(false)}
-          onLogoUpdated={(newLogo) => setLogoUrl(newLogo)}
+          onLogoUpdated={(newLogo) => {
+            setLogoUrl(newLogo);
+            window.dispatchEvent(new CustomEvent('laundry-logo-updated', { detail: newLogo }));
+          }}
         />
       )}
     </>

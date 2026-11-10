@@ -5,6 +5,7 @@ import path from 'node:path';
 import { db, backupDatabase, getAppSetting, setAppSetting, uploadsDir, dataDir, projectRoot } from './db.ts';
 import { 
   syncOrderToCloud, 
+  syncOrderDeleteToCloud,
   syncCustomerToCloud, 
   syncCustomerDeleteToCloud,
   syncPaymentToCloud, 
@@ -2015,12 +2016,16 @@ apiRouter.post('/orders/:id/status', authenticate, (req: AuthenticatedRequest, r
     if (order.assigned_delivery_boy_id !== req.user.id) {
       return res.status(403).json({ error: 'Cannot update status of unassigned order' });
     }
-    // Strict requirement: Cannot mark 'picked_up' until both photos have uploaded!
+    // Require at least 1 pickup photo (bag or clothes) before marking 'picked_up'
     if (status === 'picked_up') {
-      const bagPhoto = db.prepare("SELECT id FROM order_photos WHERE order_id = ? AND photo_type = 'bag'").get(orderId);
-      const clothesPhoto = db.prepare("SELECT id FROM order_photos WHERE order_id = ? AND photo_type = 'clothes'").get(orderId);
-      if (!bagPhoto || !clothesPhoto) {
-        return res.status(400).json({ error: 'Cannot complete pickup: Both Bag Photo and Clothes Photo must be uploaded first.' });
+      const anyPhoto = db.prepare("SELECT id FROM order_photos WHERE order_id = ? LIMIT 1").get(orderId);
+      let hasPickupPhotoJson = false;
+      try {
+        const arr = JSON.parse(order.pickup_photos || '[]');
+        if (Array.isArray(arr) && arr.length > 0) hasPickupPhotoJson = true;
+      } catch {}
+      if (!anyPhoto && !hasPickupPhotoJson) {
+        return res.status(400).json({ error: 'Cannot complete pickup: Please upload at least 1 pickup photo first.' });
       }
     }
   }
@@ -2726,7 +2731,7 @@ apiRouter.post('/invoices/:id/whatsapp', authenticate, (req: AuthenticatedReques
 
   // Fetch actual order items for item-wise breakdown
   const items = db.prepare(`
-    SELECT item_name, quantity, rate, line_total 
+    SELECT item_name, quantity, rate, line_total, unit, weight_display, weight_kg, sq_ft
     FROM order_items 
     WHERE order_id = ?
     ORDER BY line_total DESC
@@ -3344,8 +3349,16 @@ apiRouter.get('/dashboard/stats', authenticate, (req: AuthenticatedRequest, res)
     const hasShop = Boolean(requestedShopId && requestedShopId !== 'all');
 
     const totalShops = (db.prepare('SELECT COUNT(*) as c FROM shops').get() as any).c;
-    const onlineBoys = (db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'delivery' AND is_online = 1").get() as any).c;
-    const availableBoys = (db.prepare("SELECT COUNT(*) as c FROM users WHERE role = 'delivery' AND is_online = 1 AND is_busy = 0").get() as any).c;
+    const onlineBoys = (db.prepare(`
+      SELECT COUNT(*) as c FROM users 
+      WHERE role = 'delivery' AND status = 'active' AND is_online = 1
+        AND id NOT IN (SELECT id FROM deleted_delivery_boy_tombstones)
+    `).get() as any).c;
+    const availableBoys = (db.prepare(`
+      SELECT COUNT(*) as c FROM users 
+      WHERE role = 'delivery' AND status = 'active' AND is_online = 1 AND is_busy = 0
+        AND id NOT IN (SELECT id FROM deleted_delivery_boy_tombstones)
+    `).get() as any).c;
 
     const todayPickups = hasShop
       ? (db.prepare("SELECT COUNT(*) as c FROM orders WHERE DATE(pickup_date) = ? AND shop_id = ?").get(today, requestedShopId) as any).c
@@ -3609,10 +3622,13 @@ apiRouter.get('/admin/master-data', authenticate, requireRole(['admin']), (req, 
     LEFT JOIN shops s ON s.id = u.shop_id
     LEFT JOIN service_areas a ON a.id = u.service_area_id
     WHERE u.role = 'delivery'
+      AND u.status = 'active'
+      AND u.id NOT IN (SELECT id FROM deleted_delivery_boy_tombstones)
+      AND (u.email_or_phone IS NULL OR u.email_or_phone NOT IN (SELECT phone FROM deleted_delivery_boy_tombstones WHERE phone IS NOT NULL AND phone != ''))
     ORDER BY u.name ASC
   `).all();
   const customers = db.prepare('SELECT * FROM customers ORDER BY created_at DESC LIMIT 200').all();
-  const orders = db.prepare(`
+  const rawOrders = db.prepare(`
     SELECT o.*, 
            COALESCE(c.name, 'Customer') as customer_name, 
            COALESCE(c.mobile, '') as customer_mobile, 
@@ -3626,7 +3642,13 @@ apiRouter.get('/admin/master-data', authenticate, requireRole(['admin']), (req, 
     LEFT JOIN users u ON u.id = o.assigned_delivery_boy_id
     ORDER BY o.created_at DESC
     LIMIT 200
-  `).all();
+  `).all() as any[];
+
+  const getItemsStmt = db.prepare('SELECT id, order_id, category_id, item_name, quantity, rate, line_total, unit, weight_kg, weight_display, sq_ft FROM order_items WHERE order_id = ?');
+  const orders = rawOrders.map(o => ({
+    ...o,
+    items: getItemsStmt.all(o.id)
+  }));
   const invoices = db.prepare(`
     SELECT inv.*, 
            COALESCE(c.name, 'Customer') as customer_name, 
@@ -3855,12 +3877,19 @@ apiRouter.put('/admin/orders/:id/items', authenticate, requireRole(['admin']), (
 
   backupDatabase();
   logAudit(req.user!.id, 'MASTER_EDIT_ORDER_ITEMS', 'order', orderId, { newSubtotal, finalTotal, itemsCount: items.length });
+  syncOrderToCloud(orderId).catch(() => {});
   res.json({ success: true, subtotal: newSubtotal, final_total: finalTotal, outstanding_amount: outstanding });
 });
 
 // 3. Master Delete Order
 apiRouter.delete('/admin/orders/:id', authenticate, requireRole(['admin']), (req: AuthenticatedRequest, res) => {
   const orderId = req.params.id;
+  const existing = db.prepare('SELECT id, order_number FROM orders WHERE id = ?').get(orderId) as { id: string; order_number: string } | undefined;
+  if (existing) {
+    db.prepare('INSERT OR REPLACE INTO deleted_order_tombstones (id, order_number, deleted_at) VALUES (?, ?, ?)')
+      .run(existing.id, existing.order_number || null, new Date().toISOString());
+  }
+
   db.prepare('DELETE FROM order_items WHERE order_id = ?').run(orderId);
   db.prepare('DELETE FROM order_photos WHERE order_id = ?').run(orderId);
   db.prepare('DELETE FROM order_status_history WHERE order_id = ?').run(orderId);
@@ -3871,6 +3900,7 @@ apiRouter.delete('/admin/orders/:id', authenticate, requireRole(['admin']), (req
 
   backupDatabase();
   logAudit(req.user!.id, 'MASTER_DELETE_ORDER', 'order', orderId);
+  syncOrderDeleteToCloud(orderId).catch(err => console.warn('[Cloud Sync] Order delete sync notice:', err));
   res.json({ success: true, message: 'Order and associated records removed' });
 });
 

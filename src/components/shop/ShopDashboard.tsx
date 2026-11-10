@@ -51,10 +51,16 @@ export const ShopDashboard: React.FC<ShopDashboardProps> = ({ onNavigate, onOpen
   };
 
   useEffect(() => {
+    if (!token) return;
     fetchStats();
     const interval = setInterval(fetchStats, 15000);
-    return () => clearInterval(interval);
-  }, []);
+    const onOrdersUpdated = () => fetchStats();
+    window.addEventListener('laundry-orders-updated', onOrdersUpdated);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('laundry-orders-updated', onOrdersUpdated);
+    };
+  }, [token]);
 
   return (
     <div className="space-y-6">

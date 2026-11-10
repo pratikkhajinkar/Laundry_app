@@ -100,6 +100,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
   const [showCameraModal, setShowCameraModal] = useState<boolean>(false);
   const [uploadingPhoto, setUploadingPhoto] = useState<boolean>(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [failedPhotos, setFailedPhotos] = useState<Record<string, boolean>>({});
   const photoFileInputRef = useRef<HTMLInputElement>(null);
 
   const handlePhotoUpload = async (fileOrB64: File | string) => {
@@ -471,8 +472,29 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
   }
 
   const { order, items, photos, invoice, payments, statusHistory, assignmentHistory } = data;
-  const singlePickupPhoto = photos[0]?.file_url || (Array.isArray(order.pickup_photos) ? order.pickup_photos[0] : null);
-  const hasProof = Boolean(order.pickup_photos || order.iron_count || order.wash_count || order.dryclean_count || order.pickup_proof_notes || photos.length > 0);
+  const fallbackUrls: string[] = [];
+  if (photos.length === 0 && order.pickup_photos) {
+    if (Array.isArray(order.pickup_photos)) {
+      fallbackUrls.push(...order.pickup_photos.filter(Boolean));
+    } else if (typeof order.pickup_photos === 'string') {
+      try {
+        const parsed = JSON.parse(order.pickup_photos);
+        if (Array.isArray(parsed)) fallbackUrls.push(...parsed.filter(Boolean));
+      } catch {
+        if (order.pickup_photos.trim()) fallbackUrls.push(order.pickup_photos.trim());
+      }
+    }
+  }
+  const displayPhotos = photos.length > 0
+    ? photos
+    : fallbackUrls.map((url, i) => ({
+        id: `legacy-${i}`,
+        file_url: url,
+        created_at: order.created_at,
+        caption: 'Synced photo reference'
+      }));
+  const singlePickupPhoto = displayPhotos[0]?.file_url || null;
+  const hasProof = Boolean(displayPhotos.length > 0 || order.iron_count || order.wash_count || order.dryclean_count || order.pickup_proof_notes);
 
   return (
     <>
@@ -1365,7 +1387,7 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
                 }}
               />
 
-              {photos.length === 0 ? (
+              {displayPhotos.length === 0 ? (
                 <div 
                   onClick={() => setShowCameraModal(true)}
                   className="p-10 text-center text-xs text-slate-400 bg-slate-50 hover:bg-sky-50/50 rounded-2xl border-2 border-dashed border-slate-200 hover:border-sky-300 cursor-pointer transition-colors group"
@@ -1378,25 +1400,44 @@ export const OrderDetailModal: React.FC<OrderDetailModalProps> = ({ orderId, onC
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {photos.map((p, idx) => (
-                    <div key={p.id || idx} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-slate-800">
-                          Pickup Photo Proof #{idx + 1}
-                        </span>
-                        <span className="text-[10px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded">
-                          Uploaded
-                        </span>
+                  {displayPhotos.map((p, idx) => {
+                    const photoKey = String(p.id || idx);
+                    const isFailed = Boolean(failedPhotos[photoKey]);
+                    return (
+                      <div key={photoKey} className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-slate-800">
+                            Pickup Photo Proof #{idx + 1}
+                          </span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                            isFailed ? 'text-amber-800 bg-amber-100' : 'text-emerald-800 bg-emerald-100'
+                          }`}>
+                            {isFailed ? 'File Missing' : 'Uploaded'}
+                          </span>
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-slate-200 aspect-video bg-slate-900 flex items-center justify-center">
+                          {isFailed ? (
+                            <div className="p-4 text-center text-xs text-slate-300 space-y-1.5">
+                              <Camera className="w-6 h-6 mx-auto text-slate-400" />
+                              <p className="font-semibold">Photo file is missing from server storage.</p>
+                              <p className="text-[11px] text-slate-400">Use Click Photo or Upload File above to attach a fresh copy.</p>
+                            </div>
+                          ) : (
+                            <img
+                              src={p.file_url}
+                              alt="Pickup Proof"
+                              onError={() => setFailedPhotos(prev => ({ ...prev, [photoKey]: true }))}
+                              className="w-full h-full object-contain"
+                            />
+                          )}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-2 flex justify-between">
+                          <span>Captured: {new Date(p.created_at).toLocaleString('en-IN')}</span>
+                          {p.caption && <span className="font-semibold">{p.caption}</span>}
+                        </div>
                       </div>
-                      <div className="rounded-lg overflow-hidden border border-slate-200 aspect-video bg-black">
-                        <img src={p.file_url} alt="Pickup Proof" className="w-full h-full object-contain" />
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-2 flex justify-between">
-                        <span>Captured: {new Date(p.created_at).toLocaleString('en-IN')}</span>
-                        {p.caption && <span className="font-semibold">{p.caption}</span>}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>

@@ -149,7 +149,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
           
           {/* Quick Create Action Buttons */}
           {(user.role === 'admin' || user.role === 'shop') && (
-            <div className="space-y-2 bg-sky-50/70 p-3 rounded-2xl border border-sky-150">
+            <div className="space-y-2 bg-sky-50/70 p-3 rounded-2xl border border-sky-200">
               <span className="text-[11px] font-black uppercase tracking-wider text-sky-800 block mb-1">
                 ⚡ Quick Actions
               </span>
@@ -240,7 +240,7 @@ export const OptionsMenuDrawer: React.FC<OptionsMenuDrawerProps> = ({
                   onClose();
                   onOpenLogoManager();
                 }}
-                className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:text-sky-900 hover:bg-sky-50 transition-colors border border-sky-150 bg-sky-50/40"
+                className="w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-sm font-bold text-slate-700 hover:text-sky-900 hover:bg-sky-50 transition-colors border border-sky-200 bg-sky-50/40"
               >
                 <div className="flex items-center gap-3">
                   <Camera className="w-5 h-5 text-sky-600" />

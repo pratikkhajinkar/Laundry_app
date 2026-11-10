@@ -15,17 +15,22 @@ import {
 export const ReportsView: React.FC = () => {
   const { token, user, t, activeShopId, setActiveShopId, shops } = useAuth();
   const [reportType, setReportType] = useState<'orders' | 'due_payments' | 'collections' | 'settlements'>('orders');
-  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || '');
+  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || shops[0]?.id || '');
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchReport = async () => {
+    if (!token) return;
+    const effectiveShopId = user?.role === 'shop' ? (user.shop_id || '') : (selectedShopId || activeShopId || shops[0]?.id || '');
+    if (user?.role === 'admin' && !effectiveShopId) {
+      return;
+    }
     try {
       setLoading(true);
       const params = new URLSearchParams();
       params.set('type', reportType);
-      if (selectedShopId && selectedShopId !== 'all') {
-        params.set('shop_id', selectedShopId);
+      if (effectiveShopId) {
+        params.set('shop_id', effectiveShopId);
       }
 
       const res = await fetch(`/api/reports/export?${params.toString()}`, {
@@ -43,8 +48,16 @@ export const ReportsView: React.FC = () => {
   };
 
   useEffect(() => {
+    if (activeShopId && activeShopId !== selectedShopId) {
+      setSelectedShopId(activeShopId);
+    } else if (!selectedShopId && shops.length > 0) {
+      setSelectedShopId(shops[0].id);
+    }
+  }, [activeShopId, shops]);
+
+  useEffect(() => {
     fetchReport();
-  }, [reportType, selectedShopId]);
+  }, [token, reportType, selectedShopId, activeShopId, shops]);
 
   const handleExportCSV = () => {
     if (data.length === 0) {

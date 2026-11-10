@@ -12,7 +12,7 @@ import {
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { db as sqliteDb, backupDatabase, projectRoot } from './db.ts';
+import { db as sqliteDb, backupDatabase, projectRoot, uploadsDir } from './db.ts';
 import { hashPassword } from './auth.ts';
 
 // Load config
@@ -89,6 +89,26 @@ export async function syncOrderToCloud(orderId: string): Promise<boolean> {
       photoUrls = [...new Set([...photoUrls, ...photos.map(p => p.file_url)])];
     }
 
+    // Include compact inline image payloads for local uploads so cloud rehydration restores actual photos
+    const pickupPhotosInline: Record<string, string> = {};
+    let inlineTotalBytes = 0;
+    for (const url of photoUrls) {
+      if (typeof url === 'string' && url.startsWith('/uploads/')) {
+        const diskPath = path.resolve(uploadsDir, path.basename(url));
+        try {
+          if (fs.existsSync(diskPath)) {
+            const stat = fs.statSync(diskPath);
+            if (stat.size <= 450 * 1024 && inlineTotalBytes + stat.size <= 650 * 1024) {
+              const ext = path.extname(diskPath).toLowerCase() === '.png' ? 'png' : 'jpeg';
+              const b64 = fs.readFileSync(diskPath).toString('base64');
+              pickupPhotosInline[url] = `data:image/${ext};base64,${b64}`;
+              inlineTotalBytes += stat.size;
+            }
+          }
+        } catch {}
+      }
+    }
+
     const payload: any = {
       id: order.id,
       order_number: order.order_number,
@@ -123,6 +143,7 @@ export async function syncOrderToCloud(orderId: string): Promise<boolean> {
       pickup_weight_total_grams: Number(order.pickup_weight_total_grams) || 0,
       pickup_weight_rate: Number(order.pickup_weight_rate) || 0,
       pickup_photos: photoUrls,
+      ...(Object.keys(pickupPhotosInline).length > 0 ? { pickup_photos_inline: pickupPhotosInline } : {}),
       pickup_proof_notes: order.pickup_proof_notes || null,
       clothes_summary: order.clothes_summary || null,
       iron_count: Number(order.iron_count) || 0,
@@ -372,6 +393,22 @@ export async function syncCategoryDeleteToCloud(categoryId: string): Promise<boo
     const docRef = doc(firestore, 'clothing_categories', sanitizeId(categoryId));
     await deleteDoc(docRef);
     console.log(`[Cloud Firestore] Category ${categoryId} deleted from Firestore.`);
+    return true;
+  } catch (err) {
+    handleQuotaError(err);
+    return false;
+  }
+}
+
+/**
+ * Remove an order from Cloud Firestore so deleted orders never resurrect
+ */
+export async function syncOrderDeleteToCloud(orderId: string): Promise<boolean> {
+  if (!checkQuotaState()) return false;
+  try {
+    const docRef = doc(firestore, 'orders', sanitizeId(orderId));
+    await deleteDoc(docRef);
+    console.log(`[Cloud Firestore] Order ${orderId} deleted from Firestore.`);
     return true;
   } catch (err) {
     handleQuotaError(err);
@@ -642,14 +679,42 @@ export async function rehydrateFromFirestore(): Promise<{
           continue;
         }
 
-        // Resolve customer_id
+        // Skip permanently deleted (tombstoned) orders and purge them from Cloud Firestore
+        try {
+          const isOrderTombstoned = sqliteDb.prepare(`
+            SELECT id FROM deleted_order_tombstones
+            WHERE id = ? OR (order_number IS NOT NULL AND order_number != '' AND order_number = ?)
+            LIMIT 1
+          `).get(id, data.order_number || '');
+          if (isOrderTombstoned) {
+            deleteDoc(docItem.ref).catch(() => {});
+            continue;
+          }
+        } catch {}
+
+        // Resolve customer_id (never resurrect tombstoned customers)
         let customerId = data.customer_id;
-        if (!customerId && data.customer_mobile) {
+        let isTombstonedCustomer = false;
+        try {
+          const tombCust = sqliteDb.prepare(`
+            SELECT id FROM deleted_customer_tombstones
+            WHERE (id = ? AND ? != '') OR (mobile IS NOT NULL AND mobile != '' AND mobile = ?)
+            LIMIT 1
+          `).get(customerId || '', customerId || '', data.customer_mobile || '');
+          if (tombCust) isTombstonedCustomer = true;
+        } catch {}
+
+        if (customerId) {
+          const existsById = sqliteDb.prepare('SELECT id FROM customers WHERE id = ?').get(customerId) as any;
+          if (!existsById) customerId = null;
+        }
+
+        if (!customerId && data.customer_mobile && !isTombstonedCustomer) {
           const found = sqliteDb.prepare('SELECT id FROM customers WHERE mobile = ?').get(data.customer_mobile) as any;
           if (found) {
             customerId = found.id;
           } else {
-            // Auto create customer from order
+            // Auto create customer from order only when not deleted
             const newCustId = crypto.randomUUID();
             sqliteDb.prepare(`
               INSERT INTO customers (id, shop_id, name, mobile, email, pickup_address, delivery_address, area, building_name, flat_number, notes, created_at, updated_at)
@@ -669,9 +734,12 @@ export async function rehydrateFromFirestore(): Promise<{
           }
         }
 
-        if (!customerId) {
+        if (!customerId && !isTombstonedCustomer) {
           const anyCust = sqliteDb.prepare('SELECT id FROM customers LIMIT 1').get() as any;
           customerId = anyCust?.id || null;
+        }
+        if (!customerId) {
+          customerId = data.customer_id || 'deleted-customer';
         }
 
         // Guaranteed collision-free unique order number
@@ -861,6 +929,39 @@ export async function rehydrateFromFirestore(): Promise<{
             }
           }
         }
+
+        // Rehydrate inline pickup photos onto local disk & order_photos table
+        const inlineMap = data.pickup_photos_inline && typeof data.pickup_photos_inline === 'object' ? data.pickup_photos_inline : {};
+        const photoUrls: string[] = Array.isArray(data.pickup_photos) ? data.pickup_photos : [];
+        for (const pUrl of photoUrls) {
+          if (typeof pUrl !== 'string' || !pUrl) continue;
+          let resolvedPath = '';
+          let fileAvailable = false;
+
+          if (pUrl.startsWith('/uploads/')) {
+            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+            resolvedPath = path.resolve(uploadsDir, path.basename(pUrl));
+            if (!fs.existsSync(resolvedPath) && typeof inlineMap[pUrl] === 'string') {
+              const matches = inlineMap[pUrl].match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+              if (matches && matches.length === 3) {
+                fs.writeFileSync(resolvedPath, Buffer.from(matches[2], 'base64'));
+              }
+            }
+            fileAvailable = fs.existsSync(resolvedPath);
+          } else if (pUrl.startsWith('data:image/') || pUrl.startsWith('http')) {
+            fileAvailable = true;
+          }
+
+          if (fileAvailable) {
+            const existingPhotoRow = sqliteDb.prepare('SELECT id FROM order_photos WHERE order_id = ? AND file_url = ?').get(id, pUrl) as any;
+            if (!existingPhotoRow) {
+              sqliteDb.prepare(`
+                INSERT INTO order_photos (id, order_id, photo_type, file_path, file_url, uploaded_by_user_id, created_at, caption)
+                VALUES (?, ?, 'bag', ?, ?, 'cloud-sync', ?, NULL)
+              `).run(crypto.randomUUID(), id, resolvedPath || pUrl, pUrl, data.created_at || new Date().toISOString());
+            }
+          }
+        }
       } catch (orderErr) {
         console.warn(`[Cloud Firestore] Order rehydration skipped for document:`, orderErr);
       }
@@ -875,7 +976,10 @@ export async function rehydrateFromFirestore(): Promise<{
           const id = data.id || docItem.id;
 
           const existingPay = sqliteDb.prepare('SELECT id FROM payment_transactions WHERE id = ?').get(id) as any;
-          if (!existingPay && data.order_id) {
+          const parentOrderExists = data.order_id
+            ? (sqliteDb.prepare('SELECT id FROM orders WHERE id = ?').get(data.order_id) as any)
+            : null;
+          if (!existingPay && parentOrderExists) {
             sqliteDb.prepare(`
               INSERT INTO payment_transactions (id, order_id, invoice_id, customer_id, shop_id, amount, payment_method, transaction_reference, collected_by_delivery_boy_id, created_at)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)

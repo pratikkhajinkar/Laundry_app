@@ -247,7 +247,7 @@ export const PriceListManager: React.FC = () => {
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
               Clothing Price List & Rates
             </h1>
-            <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-850">
+            <span className="text-xs sm:text-sm font-bold px-3 py-1 rounded-full bg-emerald-100 text-emerald-800">
               {categories.filter(c => c.is_active === 1).length} Active Rates
             </span>
           </div>
@@ -392,7 +392,7 @@ export const PriceListManager: React.FC = () => {
                         onClick={() => handleToggleActive(cat)}
                         className={`text-xs sm:text-sm font-bold px-3 py-1 rounded-full border cursor-pointer transition-all ${
                           cat.is_active === 1
-                            ? 'bg-emerald-50 text-emerald-850 border-emerald-300 hover:bg-emerald-100'
+                            ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
                             : 'bg-slate-100 text-slate-500 border-slate-200 hover:bg-slate-200'
                         }`}
                         title="Click to toggle active state"
@@ -428,7 +428,7 @@ export const PriceListManager: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => handleStartEdit(cat)}
-                            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-850 hover:text-emerald-950 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-bold text-emerald-800 hover:text-emerald-950 px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
                           >
                             <Edit2 className="w-3.5 h-3.5" />
                             <span>Edit Rate</span>

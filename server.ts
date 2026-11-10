@@ -50,8 +50,11 @@ async function startServer() {
     next();
   });
 
-  // Serve persistent photos
+  // Serve persistent photos (return real 404 when missing so UI triggers clean image fallback)
   app.use('/uploads', express.static(uploadsDir));
+  app.use('/uploads', (_req, res) => {
+    res.status(404).json({ error: 'Uploaded file not found' });
+  });
 
   // Mount backend API routes
   app.use('/api', apiRouter);

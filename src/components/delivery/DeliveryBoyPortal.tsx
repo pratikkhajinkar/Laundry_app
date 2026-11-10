@@ -73,6 +73,7 @@ export const DeliveryBoyPortal: React.FC = () => {
 
   // Mandatory Single Pickup Photo state
   const [pickupPhoto, setPickupPhoto] = useState<string | null>(null);
+  const [pickupPhotoLoadError, setPickupPhotoLoadError] = useState<boolean>(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [showCameraModal, setShowCameraModal] = useState(false);
@@ -148,6 +149,7 @@ export const DeliveryBoyPortal: React.FC = () => {
     setModalMode('pickup_flow');
     setPhotoError(null);
     setPickupPhoto(null);
+    setPickupPhotoLoadError(false);
     setWashCount(order.wash_count || 0);
     setDrycleanCount(order.dryclean_count || 0);
     setIronCount(order.iron_count || 0);
@@ -208,6 +210,7 @@ export const DeliveryBoyPortal: React.FC = () => {
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Photo upload failed');
+      setPickupPhotoLoadError(false);
       setPickupPhoto(data.fileUrl || data.uploaded?.[0]?.fileUrl);
     } catch (err: any) {
       setPhotoError(err.message || 'Failed to upload photo');
@@ -1040,8 +1043,21 @@ export const DeliveryBoyPortal: React.FC = () => {
 
               <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs">
                 {pickupPhoto ? (
-                  <div className="relative rounded-lg overflow-hidden border border-slate-200 aspect-video bg-slate-100 mb-2.5">
-                    <img src={pickupPhoto} alt="Pickup Proof" className="w-full h-full object-cover" />
+                  <div className="relative rounded-lg overflow-hidden border border-slate-200 aspect-video bg-slate-100 mb-2.5 flex items-center justify-center">
+                    {pickupPhotoLoadError ? (
+                      <div className="p-4 text-center text-xs text-slate-500 space-y-1">
+                        <Camera className="w-6 h-6 mx-auto text-slate-400" />
+                        <p className="font-semibold text-slate-700">Saved photo file unavailable</p>
+                        <p className="text-[11px]">Tap Retake or Upload File to capture a fresh photo.</p>
+                      </div>
+                    ) : (
+                      <img
+                        src={pickupPhoto}
+                        alt="Pickup Proof"
+                        onError={() => setPickupPhotoLoadError(true)}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     <button
                       type="button"
                       onClick={() => setShowCameraModal(true)}

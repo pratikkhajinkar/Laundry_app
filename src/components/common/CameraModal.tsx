@@ -22,22 +22,30 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nativeCameraInputRef = useRef<HTMLInputElement>(null);
 
   const stopStream = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
     }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
   };
 
-  const startCamera = async (mode: 'environment' | 'user') => {
+  const startCamera = async (mode: 'environment' | 'user', isCancelled: () => boolean) => {
     stopStream();
     setCameraError(null);
     setIsStarting(true);
 
     try {
+      const isLocalhost = ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
       if (!navigator?.mediaDevices?.getUserMedia) {
-        throw new Error('Direct camera is not supported on this browser or connection. Please use file upload below.');
+        if (!window.isSecureContext && !isLocalhost) {
+          throw new Error('Live browser camera preview requires HTTPS. Tap "Open Phone Camera" below to capture directly.');
+        }
+        throw new Error('Live camera preview is not supported in this browser. Tap "Open Phone Camera" or choose from gallery.');
       }
 
       // Try environment or user camera
@@ -53,9 +61,15 @@ export const CameraModal: React.FC<CameraModalProps> = ({
       let stream: MediaStream;
       try {
         stream = await navigator.mediaDevices.getUserMedia(constraints);
-      } catch (err: any) {
+      } catch {
         // Fallback to any available video stream if ideal facingMode failed
         stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      }
+
+      // If modal closed or effect restarted while awaiting permission, release camera immediately
+      if (isCancelled()) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
       }
 
       streamRef.current = stream;
@@ -65,24 +79,29 @@ export const CameraModal: React.FC<CameraModalProps> = ({
         await videoRef.current.play();
       }
     } catch (err: any) {
+      if (isCancelled()) return;
       const msg = err?.message || 'Unable to access camera.';
       if (err?.name === 'NotAllowedError' || msg.includes('Permission')) {
-        setCameraError('Camera permission denied. Please allow camera access in browser settings or upload a photo.');
+        setCameraError('Camera permission denied. Allow camera access or tap "Open Phone Camera" / choose from gallery.');
       } else {
         setCameraError(msg);
       }
     } finally {
-      setIsStarting(false);
+      if (!isCancelled()) {
+        setIsStarting(false);
+      }
     }
   };
 
   useEffect(() => {
+    let cancelled = false;
     if (isOpen) {
-      startCamera(facingMode);
+      startCamera(facingMode, () => cancelled);
     } else {
       stopStream();
     }
     return () => {
+      cancelled = true;
       stopStream();
     };
   }, [isOpen, facingMode]);
@@ -94,14 +113,27 @@ export const CameraModal: React.FC<CameraModalProps> = ({
   const handleCapturePhoto = () => {
     if (!videoRef.current) return;
     const video = videoRef.current;
-    if (video.videoWidth === 0 || video.videoHeight === 0) return;
+    if (video.readyState < 2 || video.videoWidth === 0 || video.videoHeight === 0) return;
 
     setIsFlashing(true);
     setTimeout(() => setIsFlashing(false), 200);
 
+    const maxDim = 1280;
+    let targetW = video.videoWidth;
+    let targetH = video.videoHeight;
+    if (targetW > maxDim || targetH > maxDim) {
+      if (targetW > targetH) {
+        targetH = Math.round((targetH * maxDim) / targetW);
+        targetW = maxDim;
+      } else {
+        targetW = Math.round((targetW * maxDim) / targetH);
+        targetH = maxDim;
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = Math.max(1, targetW);
+    canvas.height = Math.max(1, targetH);
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
@@ -156,14 +188,24 @@ export const CameraModal: React.FC<CameraModalProps> = ({
                 <p className="text-sm font-semibold text-slate-200">Camera Unavailable</p>
                 <p className="text-xs text-slate-400 mt-1">{cameraError}</p>
               </div>
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full py-3 px-4 bg-sky-500 hover:bg-sky-600 active:scale-98 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Upload Photo from Gallery / Device</span>
-              </button>
+              <div className="space-y-2.5">
+                <button
+                  type="button"
+                  onClick={() => nativeCameraInputRef.current?.click()}
+                  className="w-full py-3 px-4 bg-sky-500 hover:bg-sky-600 active:scale-98 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all shadow-md"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Open Phone Camera / Take Photo</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 active:scale-98 text-slate-100 border border-slate-700 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-all"
+                >
+                  <Upload className="w-4 h-4 text-sky-400" />
+                  <span>Upload Photo from Gallery / Device</span>
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -208,6 +250,14 @@ export const CameraModal: React.FC<CameraModalProps> = ({
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            className="hidden"
+            onChange={handleFileUpload}
+          />
+          <input
+            ref={nativeCameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={handleFileUpload}
           />
@@ -260,3 +310,4 @@ export const CameraModal: React.FC<CameraModalProps> = ({
     </div>
   );
 };
+

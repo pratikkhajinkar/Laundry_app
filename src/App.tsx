@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import { Navbar } from './components/Navbar.tsx';
 import { SetupWizard } from './components/SetupWizard.tsx';
@@ -46,6 +46,23 @@ const MainApp: React.FC = () => {
   const [quickOrderInitialType, setQuickOrderInitialType] = useState<'pickup' | 'delivery'>('pickup');
   const [showOptionsMenu, setShowOptionsMenu] = useState<boolean>(false);
   const [showLogoModal, setShowLogoModal] = useState<boolean>(false);
+  const [logoUrl, setLogoUrl] = useState<string>('');
+
+  useEffect(() => {
+    fetch('/api/settings')
+      .then(r => r.json())
+      .then(d => {
+        if (d?.logo) setLogoUrl(d.logo);
+      })
+      .catch(() => {});
+
+    const onLogoEvent = (e: Event) => {
+      const detail = (e as CustomEvent<string>).detail;
+      if (typeof detail === 'string') setLogoUrl(detail);
+    };
+    window.addEventListener('laundry-logo-updated', onLogoEvent);
+    return () => window.removeEventListener('laundry-logo-updated', onLogoEvent);
+  }, []);
 
   // 1. Initial Loading Screen
   if (isCheckingSetup) {
@@ -300,14 +317,17 @@ const MainApp: React.FC = () => {
           setShowGlobalNewOrder(true);
         }}
         onOpenLogoManager={() => setShowLogoModal(true)}
+        logoUrl={logoUrl}
       />
 
       {/* Logo Manager Modal */}
       {showLogoModal && (
         <LogoManagerModal 
-          currentLogo=""
+          currentLogo={logoUrl}
           onClose={() => setShowLogoModal(false)}
-          onLogoUpdated={() => {
+          onLogoUpdated={(newLogo) => {
+            setLogoUrl(newLogo);
+            window.dispatchEvent(new CustomEvent('laundry-logo-updated', { detail: newLogo }));
             setShowLogoModal(false);
           }}
         />
@@ -321,6 +341,7 @@ const MainApp: React.FC = () => {
           onSuccess={() => {
             setShowGlobalNewOrder(false);
             setCurrentTab('orders');
+            window.dispatchEvent(new CustomEvent('laundry-orders-updated'));
           }}
         />
       )}
@@ -333,6 +354,7 @@ const MainApp: React.FC = () => {
           onSuccess={() => {
             setShowQuickOrderModal(false);
             setCurrentTab('orders');
+            window.dispatchEvent(new CustomEvent('laundry-orders-updated'));
           }}
         />
       )}

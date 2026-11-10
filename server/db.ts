@@ -125,6 +125,12 @@ export function initDatabase() {
       deleted_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS deleted_order_tombstones (
+      id TEXT PRIMARY KEY,
+      order_number TEXT,
+      deleted_at TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS customers (
       id TEXT PRIMARY KEY,
       shop_id TEXT,

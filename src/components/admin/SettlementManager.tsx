@@ -31,7 +31,7 @@ export const SettlementManager: React.FC = () => {
   const [pendingList, setPendingList] = useState<PendingSettlement[]>([]);
   const [historyList, setHistoryList] = useState<ShopSettlement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || '');
+  const [selectedShopId, setSelectedShopId] = useState<string>(() => activeShopId || authShops[0]?.id || '');
 
   // Settlement Confirmation Modal
   const [selectedPending, setSelectedPending] = useState<PendingSettlement | null>(null);
@@ -42,9 +42,12 @@ export const SettlementManager: React.FC = () => {
 
   const fetchData = useCallback(async () => {
     if (!token) return;
+    const targetShop = user?.role === 'shop' ? user.shop_id : (selectedShopId || activeShopId || authShops[0]?.id || '');
+    if (user?.role === 'admin' && !targetShop) {
+      return;
+    }
     try {
       setLoading(true);
-      const targetShop = user?.role === 'shop' ? user.shop_id : selectedShopId;
       const params = new URLSearchParams();
       if (targetShop) params.set('shop_id', targetShop);
 
@@ -66,7 +69,7 @@ export const SettlementManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [token, user?.role, user?.shop_id, selectedShopId]);
+  }, [token, user?.role, user?.shop_id, selectedShopId, activeShopId, authShops]);
 
   useEffect(() => {
     fetchData();
@@ -75,8 +78,10 @@ export const SettlementManager: React.FC = () => {
   useEffect(() => {
     if (activeShopId && activeShopId !== selectedShopId) {
       setSelectedShopId(activeShopId);
+    } else if (!selectedShopId && authShops.length > 0) {
+      setSelectedShopId(authShops[0].id);
     }
-  }, [activeShopId]);
+  }, [activeShopId, authShops]);
 
   const handleOpenSettle = (item: PendingSettlement) => {
     setSelectedPending(item);

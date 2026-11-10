@@ -64,6 +64,7 @@ interface MasterOrder {
   outstanding_amount: number;
   payment_status: string;
   notes: string | null;
+  special_instructions?: string | null;
   created_at: string;
   items?: OrderItem[];
   invoice_number?: string;
@@ -98,16 +99,20 @@ interface MasterDeliveryBoy {
   name: string;
   email_or_phone: string;
   area_name: string | null;
+  status?: string;
   is_busy: number;
-  is_active: number;
+  is_active?: number;
 }
 
 interface MasterCategory {
   id: string;
   name: string;
-  base_price: number;
-  service_type: string;
+  default_rate?: number;
+  unit?: string;
+  base_price?: number;
+  service_type?: string;
   is_active: number;
+  sort_order?: number;
 }
 
 interface MasterArea {
@@ -135,7 +140,7 @@ interface DbStats {
 }
 
 export const MasterEditorView: React.FC = () => {
-  const { token, language } = useAuth();
+  const { token, language, activeShopId, setActiveShopId } = useAuth();
   const [activeTab, setActiveTab] = useState<'orders' | 'customers' | 'shops' | 'delivery' | 'categories' | 'database'>('orders');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -152,7 +157,7 @@ export const MasterEditorView: React.FC = () => {
 
   // Filter & Search
   const [searchTerm, setSearchTerm] = useState('');
-  const [shopFilter, setShopFilter] = useState('all');
+  const [shopFilter, setShopFilter] = useState(() => activeShopId || '');
 
   // Edit Modals
   const [editingOrder, setEditingOrder] = useState<MasterOrder | null>(null);
@@ -177,6 +182,11 @@ export const MasterEditorView: React.FC = () => {
         setDeliveryBoys(d.deliveryBoys || []);
         setCategories(d.categories || []);
         setServiceAreas(d.serviceAreas || []);
+        if (!shopFilter && !activeShopId && d.shops?.length > 0) {
+          setShopFilter(d.shops[0].id);
+        } else if (activeShopId && !shopFilter) {
+          setShopFilter(activeShopId);
+        }
       }
 
       if (resStats.ok) {
@@ -193,6 +203,12 @@ export const MasterEditorView: React.FC = () => {
   useEffect(() => {
     fetchMasterData();
   }, []);
+
+  useEffect(() => {
+    if (activeShopId && activeShopId !== shopFilter) {
+      setShopFilter(activeShopId);
+    }
+  }, [activeShopId]);
 
   const showNotification = (type: 'success' | 'error', text: string) => {
     setMsg({ type, text });
@@ -338,10 +354,18 @@ export const MasterEditorView: React.FC = () => {
     if (!editingCategory) return;
     try {
       setSaving(true);
+      const rateVal = Number(editingCategory.default_rate ?? editingCategory.base_price ?? 0);
+      const unitVal = editingCategory.unit || 'piece';
       const res = await fetch(`/api/clothing-categories/${editingCategory.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify(editingCategory)
+        body: JSON.stringify({
+          name: editingCategory.name,
+          default_rate: rateVal,
+          unit: unitVal,
+          is_active: editingCategory.is_active ?? 1,
+          sort_order: editingCategory.sort_order ?? 0
+        })
       });
       if (res.ok) {
         showNotification('success', `Rate updated for ${editingCategory.name}!`);
@@ -385,7 +409,7 @@ export const MasterEditorView: React.FC = () => {
 
   // Filtered Orders
   const filteredOrders = orders.filter(o => {
-    const matchShop = shopFilter === 'all' || o.shop_id === shopFilter;
+    const matchShop = !shopFilter || o.shop_id === shopFilter;
     const matchSearch = searchTerm === '' ||
       o.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
       o.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -509,10 +533,12 @@ export const MasterEditorView: React.FC = () => {
               <span className="text-xs font-bold text-slate-600">Shop Filter:</span>
               <select
                 value={shopFilter}
-                onChange={(e) => setShopFilter(e.target.value)}
+                onChange={(e) => {
+                  setShopFilter(e.target.value);
+                  setActiveShopId(e.target.value);
+                }}
                 className="text-xs font-semibold px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-emerald-600"
               >
-                <option value="all">All 4 Shops</option>
                 {shops.map(s => (
                   <option key={s.id} value={s.id}>{s.name} ({s.code})</option>
                 ))}
@@ -793,9 +819,9 @@ export const MasterEditorView: React.FC = () => {
                       </td>
                       <td className="py-3 px-4">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                          boy.is_active ? 'bg-slate-100 text-slate-800' : 'bg-red-100 text-red-800'
+                          (boy.status === 'active' || boy.is_active === 1) ? 'bg-slate-100 text-slate-800' : 'bg-red-100 text-red-800'
                         }`}>
-                          {boy.is_active ? 'Active' : 'Disabled'}
+                          {(boy.status === 'active' || boy.is_active === 1) ? 'Active' : 'Disabled'}
                         </span>
                       </td>
                     </tr>
@@ -822,23 +848,29 @@ export const MasterEditorView: React.FC = () => {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 font-bold uppercase tracking-wider text-[11px]">
                     <th className="py-3 px-4">Garment Item</th>
-                    <th className="py-3 px-4">Service Type</th>
-                    <th className="py-3 px-4 text-right">Rate per Piece (₹)</th>
+                    <th className="py-3 px-4">Billing Unit</th>
+                    <th className="py-3 px-4 text-right">Default Rate (₹)</th>
                     <th className="py-3 px-4 text-center">Status</th>
                     <th className="py-3 px-4 text-center">Edit Rate</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {categories.map(cat => (
+                  {categories.map(cat => {
+                    const rateValue = Number(cat.default_rate ?? cat.base_price ?? 0);
+                    const unitValue = String(cat.unit || cat.service_type || 'piece').replace(/_/g, ' ');
+                    const isCatActive = cat.is_active !== 0;
+                    return (
                     <tr key={cat.id} className="hover:bg-slate-50/80">
                       <td className="py-3 px-4 font-bold text-slate-900">{cat.name}</td>
-                      <td className="py-3 px-4 text-slate-600 capitalize">{cat.service_type.replace('_', ' ')}</td>
+                      <td className="py-3 px-4 text-slate-600 capitalize">{unitValue}</td>
                       <td className="py-3 px-4 text-right font-black text-slate-900 font-mono text-sm">
-                        ₹{cat.base_price.toFixed(2)}
+                        ₹{rateValue.toFixed(2)}
                       </td>
                       <td className="py-3 px-4 text-center">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                          Active
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                          isCatActive ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {isCatActive ? 'Active' : 'Disabled'}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-center">
@@ -852,7 +884,8 @@ export const MasterEditorView: React.FC = () => {
                         </button>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1061,8 +1094,8 @@ export const MasterEditorView: React.FC = () => {
                 <label className="font-bold text-slate-700 block mb-1">Order Notes / Instructions</label>
                 <input
                   type="text"
-                  value={editingOrder.notes || ''}
-                  onChange={(e) => setEditingOrder({ ...editingOrder, notes: e.target.value })}
+                  value={editingOrder.special_instructions ?? editingOrder.notes ?? ''}
+                  onChange={(e) => setEditingOrder({ ...editingOrder, special_instructions: e.target.value, notes: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl"
                 />
               </div>
@@ -1539,15 +1572,19 @@ export const MasterEditorView: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Rate Per Piece (₹)</label>
+                <label className="font-bold text-slate-700 block mb-1">Default Rate (₹)</label>
                 <div className="flex items-center gap-1">
                   <span className="text-base font-black text-slate-600">₹</span>
                   <input
                     type="number"
                     min={0}
-                    step={1}
-                    value={editingCategory.base_price}
-                    onChange={(e) => setEditingCategory({ ...editingCategory, base_price: parseFloat(e.target.value) || 0 })}
+                    step="any"
+                    value={editingCategory.default_rate ?? editingCategory.base_price ?? 0}
+                    onChange={(e) => setEditingCategory({
+                      ...editingCategory,
+                      default_rate: parseFloat(e.target.value) || 0,
+                      base_price: parseFloat(e.target.value) || 0
+                    })}
                     className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono font-bold text-sm"
                     required
                   />
@@ -1555,16 +1592,15 @@ export const MasterEditorView: React.FC = () => {
               </div>
 
               <div>
-                <label className="font-bold text-slate-700 block mb-1">Service Type</label>
+                <label className="font-bold text-slate-700 block mb-1">Billing Unit</label>
                 <select
-                  value={editingCategory.service_type}
-                  onChange={(e) => setEditingCategory({ ...editingCategory, service_type: e.target.value })}
+                  value={editingCategory.unit || 'piece'}
+                  onChange={(e) => setEditingCategory({ ...editingCategory, unit: e.target.value })}
                   className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-semibold"
                 >
-                  <option value="wash_and_iron">Wash & Iron</option>
-                  <option value="dry_clean">Dry Cleaning</option>
-                  <option value="steam_iron">Steam Iron</option>
-                  <option value="premium_wash">Premium Care</option>
+                  <option value="piece">Per Piece</option>
+                  <option value="kg">Per Kg (Weight)</option>
+                  <option value="sq_ft">Per Sq. Ft</option>
                 </select>
               </div>
 

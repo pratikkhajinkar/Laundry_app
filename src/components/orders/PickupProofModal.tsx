@@ -26,6 +26,7 @@ export const PickupProofModal: React.FC<PickupProofModalProps> = ({ order, onClo
   const { token } = useAuth();
   const [sendingWa, setSendingWa] = useState(false);
   const [waHint, setWaHint] = useState<string | null>(null);
+  const [failedPhotos, setFailedPhotos] = useState<Record<number, boolean>>({});
 
   const totalPieces = order.total_pieces || 
     ((order.iron_count || 0) + (order.dryclean_count || 0) + (order.wash_count || 0)) ||
@@ -259,12 +260,20 @@ export const PickupProofModal: React.FC<PickupProofModalProps> = ({ order, onClo
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                 {photosList.map((url, idx) => (
-                  <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-300 bg-gray-100 aspect-square">
-                    <img
-                      src={url}
-                      alt={`Proof ${idx + 1}`}
-                      className="w-full h-full object-cover"
-                    />
+                  <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-300 bg-gray-100 aspect-square flex items-center justify-center">
+                    {failedPhotos[idx] ? (
+                      <div className="p-2 text-center text-[10px] text-gray-500 flex flex-col items-center gap-1">
+                        <Camera className="w-4 h-4 text-gray-400" />
+                        <span>Photo file unavailable offline</span>
+                      </div>
+                    ) : (
+                      <img
+                        src={url}
+                        alt={`Proof ${idx + 1}`}
+                        onError={() => setFailedPhotos(prev => ({ ...prev, [idx]: true }))}
+                        className="w-full h-full object-cover"
+                      />
+                    )}
                     <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[10px] font-medium py-0.5 px-1.5 text-center truncate">
                       Proof #{idx + 1}
                     </div>

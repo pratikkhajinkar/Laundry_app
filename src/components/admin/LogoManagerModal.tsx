@@ -225,7 +225,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
 
           {/* Option 1: Upload from Device */}
           <div>
-            <label className="block text-sm font-bold text-slate-850 mb-2">
+            <label className="block text-sm font-bold text-slate-800 mb-2">
               1. Upload Logo from Device
             </label>
             <label className="border-2 border-dashed border-sky-300 hover:border-sky-500 rounded-2xl p-5 flex flex-col items-center justify-center cursor-pointer bg-sky-50/50 hover:bg-sky-50 transition-colors">
@@ -245,7 +245,7 @@ export const LogoManagerModal: React.FC<LogoManagerModalProps> = ({ currentLogo,
 
           {/* Option 2: Choose from Preset Professional Logos */}
           <div>
-            <label className="block text-sm font-bold text-slate-850 mb-2 flex items-center gap-1.5">
+            <label className="block text-sm font-bold text-slate-800 mb-2 flex items-center gap-1.5">
               <Sparkles className="w-4 h-4 text-amber-500" />
               <span>2. Or Choose a Ready-made Brand Logo</span>
             </label>
