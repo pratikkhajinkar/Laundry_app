@@ -166,7 +166,7 @@ export async function syncOrderToCloud(orderId: string): Promise<boolean> {
       })),
       invoice_number: invoice?.invoice_number || null,
       created_at: order.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      updated_at: order.updated_at || order.created_at || new Date().toISOString(),
       cloud_synced_at: new Date().toISOString()
     };
 
@@ -226,7 +226,7 @@ export async function syncCustomerToCloud(customerId: string): Promise<boolean> 
       flat_number: cust.flat_number || null,
       notes: cust.notes || null,
       created_at: cust.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      updated_at: cust.updated_at || cust.created_at || new Date().toISOString(),
       cloud_synced_at: new Date().toISOString()
     };
 
@@ -306,7 +306,7 @@ export async function syncDeliveryBoyToCloud(boyId: string): Promise<boolean> {
       is_online: Number(boy.is_online) || 0,
       is_busy: Number(boy.is_busy) || 0,
       created_at: boy.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      updated_at: boy.updated_at || boy.created_at || new Date().toISOString(),
       cloud_synced_at: new Date().toISOString()
     };
 
@@ -369,7 +369,7 @@ export async function syncCategoryToCloud(categoryId: string): Promise<boolean> 
       is_active: Number(cat.is_active) || 1,
       sort_order: Number(cat.sort_order) || 0,
       created_at: cat.created_at || new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      updated_at: cat.updated_at || cat.created_at || new Date().toISOString()
     };
 
     const docRef = doc(firestore, 'clothing_categories', sanitizeId(cat.id));
@@ -515,7 +515,7 @@ export async function rehydrateFromFirestore(): Promise<{
         }
 
         // Check if user already exists by ID or by email_or_phone
-        const existing = sqliteDb.prepare('SELECT id, role, status FROM users WHERE id = ? OR email_or_phone = ?').get(id, phone) as any;
+        const existing = sqliteDb.prepare('SELECT id, role, status, updated_at, created_at FROM users WHERE id = ? OR email_or_phone = ?').get(id, phone) as any;
         if (!existing) {
           sqliteDb.prepare(`
             INSERT INTO users (id, name, email_or_phone, password_hash, salt, role, service_area_id, status, is_online, is_busy, created_at, updated_at)
@@ -533,7 +533,15 @@ export async function rehydrateFromFirestore(): Promise<{
           );
           restoredDeliveryBoys++;
         } else {
-          // If already exists, make sure role is delivery and keep name/area/status in sync
+          const localTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+          const cloudTime = new Date(data.updated_at || data.created_at || 0).getTime();
+          if (localTime >= cloudTime) {
+            if (localTime > cloudTime) {
+              syncDeliveryBoyToCloud(existing.id).catch(() => {});
+            }
+            continue;
+          }
+
           sqliteDb.prepare(`
             UPDATE users
             SET name = COALESCE(?, name),
@@ -860,6 +868,9 @@ export async function rehydrateFromFirestore(): Promise<{
               data.updated_at || new Date().toISOString(),
               id
             );
+          } else if (existingTime > cloudTime) {
+            // Preserve newer local edits and push them back to Firestore
+            syncOrderToCloud(id).catch(() => {});
           }
         }
 
@@ -1032,11 +1043,11 @@ export async function rehydrateFromFirestore(): Promise<{
           // Ignore if table not yet initialized
         }
 
-        const existing = sqliteDb.prepare('SELECT id FROM clothing_categories WHERE id = ? OR name = ?').get(id, data.name) as any;
+        const existing = sqliteDb.prepare('SELECT id, updated_at, created_at FROM clothing_categories WHERE id = ? OR name = ?').get(id, data.name) as any;
         if (!existing) {
           sqliteDb.prepare(`
-            INSERT INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
           `).run(
             id,
             data.name,
@@ -1045,13 +1056,23 @@ export async function rehydrateFromFirestore(): Promise<{
             data.unit || 'piece',
             data.is_active !== undefined ? (data.is_active ? 1 : 0) : 1,
             data.sort_order || 0,
-            data.created_at || new Date().toISOString()
+            data.created_at || new Date().toISOString(),
+            data.updated_at || data.created_at || new Date().toISOString()
           );
           restoredCategories++;
         } else {
+          const localTime = new Date(existing.updated_at || existing.created_at || 0).getTime();
+          const cloudTime = new Date(data.updated_at || data.created_at || 0).getTime();
+          if (localTime >= cloudTime) {
+            if (localTime > cloudTime) {
+              syncCategoryToCloud(existing.id).catch(() => {});
+            }
+            continue;
+          }
+
           sqliteDb.prepare(`
             UPDATE clothing_categories
-            SET name = ?, name_mr = ?, default_rate = ?, unit = ?, is_active = ?, sort_order = ?
+            SET name = ?, name_mr = ?, default_rate = ?, unit = ?, is_active = ?, sort_order = ?, updated_at = ?
             WHERE id = ?
           `).run(
             data.name,
@@ -1060,6 +1081,7 @@ export async function rehydrateFromFirestore(): Promise<{
             data.unit || 'piece',
             data.is_active !== undefined ? (data.is_active ? 1 : 0) : 1,
             data.sort_order || 0,
+            data.updated_at || new Date().toISOString(),
             existing.id
           );
         }

@@ -164,6 +164,7 @@ apiRouter.post('/setup/initialize', (req, res) => {
 
   const token = createSession(adminId);
   const user = db.prepare(`SELECT id, name, email_or_phone, role, status FROM users WHERE id = ?`).get(adminId);
+  backupDatabase();
 
   res.json({
     message: 'Super Admin successfully initialized',
@@ -281,6 +282,7 @@ apiRouter.post('/areas', authenticate, requireRole(['admin']), (req: Authenticat
       VALUES (?, ?, ?, ?, ?)
     `).run(id, name.trim(), pincode || '', city || 'Pune', now);
 
+    backupDatabase();
     logAudit(req.user!.id, 'CREATE_AREA', 'service_area', id, { name, pincode });
     res.json({ success: true, id, name, pincode, city });
   } catch (err: any) {
@@ -343,6 +345,7 @@ apiRouter.post('/shops', authenticate, requireRole(['admin']), (req: Authenticat
       staffUser = { id: staffId, email: staffEmailOrPhone };
     }
 
+    backupDatabase();
     logAudit(req.user!.id, 'CREATE_SHOP', 'shop', shopId, { name, code: shopCode });
     res.json({ success: true, shopId, code: shopCode, staffUser });
   } catch (err: any) {
@@ -564,9 +567,9 @@ apiRouter.post('/clothing-categories', authenticate, requireRole(['admin']), (re
   const now = new Date().toISOString();
 
   db.prepare(`
-    INSERT INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at)
-    VALUES (?, ?, ?, ?, ?, 1, ?, ?)
-  `).run(id, name.trim(), name_mr ? name_mr.trim() : null, parseFloat(default_rate), unit || 'piece', sort_order || 0, now);
+    INSERT INTO clothing_categories (id, name, name_mr, default_rate, unit, is_active, sort_order, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)
+  `).run(id, name.trim(), name_mr ? name_mr.trim() : null, parseFloat(default_rate), unit || 'piece', sort_order || 0, now, now);
 
   backupDatabase();
   logAudit(req.user!.id, 'CREATE_CATEGORY', 'clothing_category', id, { name, rate: default_rate });
@@ -577,12 +580,13 @@ apiRouter.post('/clothing-categories', authenticate, requireRole(['admin']), (re
 apiRouter.put('/clothing-categories/:id', authenticate, requireRole(['admin']), (req: AuthenticatedRequest, res) => {
   const id = req.params.id;
   const { name, name_mr, default_rate, unit, is_active, sort_order } = req.body;
+  const now = new Date().toISOString();
 
   db.prepare(`
     UPDATE clothing_categories 
-    SET name = ?, name_mr = ?, default_rate = ?, unit = ?, is_active = ?, sort_order = ?
+    SET name = ?, name_mr = ?, default_rate = ?, unit = ?, is_active = ?, sort_order = ?, updated_at = ?
     WHERE id = ?
-  `).run(name, name_mr || null, parseFloat(default_rate), unit || 'piece', is_active !== undefined ? (is_active ? 1 : 0) : 1, sort_order || 0, id);
+  `).run(name, name_mr || null, parseFloat(default_rate), unit || 'piece', is_active !== undefined ? (is_active ? 1 : 0) : 1, sort_order || 0, now, id);
 
   backupDatabase();
   logAudit(req.user!.id, 'UPDATE_CATEGORY', 'clothing_category', id, { name, rate: default_rate, is_active });
@@ -1971,6 +1975,7 @@ apiRouter.post('/orders/:id/assign', authenticate, requireRole(['admin', 'shop']
     `).run(crypto.randomUUID(), orderId, newStatus, req.user!.id, `Assigned to delivery boy`, now);
   }
 
+  backupDatabase();
   logAudit(req.user!.id, 'ASSIGN_DELIVERY_BOY', 'order', orderId, { delivery_boy_id, stage });
   syncOrderToCloud(orderId).catch(() => {});
   res.json({ success: true, newStatus });
@@ -2157,6 +2162,7 @@ apiRouter.post('/orders/:id/photos', authenticate, (req: AuthenticatedRequest, r
   const allUrls = allOrderPhotos.map(p => p.file_url);
   db.prepare('UPDATE orders SET pickup_photos = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(allUrls), now, orderId);
 
+  backupDatabase();
   logAudit(req.user!.id, 'UPLOAD_PICKUP_PHOTO', 'order_photo', orderId, { count: uploadedResults.length });
   syncOrderToCloud(orderId).catch(err => console.warn('[Cloud Sync] Photo notice:', err));
 
@@ -2187,9 +2193,11 @@ apiRouter.delete('/orders/:id/photos/:photoId', authenticate, (req: Authenticate
   // Sync orders.pickup_photos
   const allOrderPhotos = db.prepare('SELECT file_url FROM order_photos WHERE order_id = ?').all(orderId) as any[];
   const allUrls = allOrderPhotos.map(p => p.file_url);
-  db.prepare('UPDATE orders SET pickup_photos = ? WHERE id = ?').run(JSON.stringify(allUrls), orderId);
+  db.prepare('UPDATE orders SET pickup_photos = ?, updated_at = ? WHERE id = ?').run(JSON.stringify(allUrls), new Date().toISOString(), orderId);
 
+  backupDatabase();
   logAudit(req.user!.id, 'DELETE_PICKUP_PHOTO', 'order_photo', photoId, { orderId });
+  syncOrderToCloud(orderId).catch(() => {});
   res.json({ success: true, allPhotos: allUrls });
 });
 
@@ -3319,6 +3327,7 @@ apiRouter.post('/settlements/record', authenticate, requireRole(['admin', 'shop'
     }
   }
 
+  backupDatabase();
   logAudit(req.user!.id, 'CONFIRM_SETTLEMENT', 'shop_settlement', settlementId, {
     shop_id,
     delivery_boy_id,
@@ -3993,9 +4002,16 @@ apiRouter.delete('/admin/customers/:id', authenticate, requireRole(['admin']), (
     return res.status(400).json({ error: `Cannot delete customer: ${activeOrders} orders exist for this customer.` });
   }
 
+  const existingCust = db.prepare('SELECT id, mobile FROM customers WHERE id = ?').get(custId) as { id: string; mobile?: string } | undefined;
+  if (existingCust) {
+    db.prepare('INSERT OR REPLACE INTO deleted_customer_tombstones (id, mobile, deleted_at) VALUES (?, ?, ?)')
+      .run(existingCust.id, existingCust.mobile || null, new Date().toISOString());
+  }
+
   db.prepare('DELETE FROM customers WHERE id = ?').run(custId);
   backupDatabase();
   logAudit(req.user!.id, 'MASTER_DELETE_CUSTOMER', 'customer', custId);
+  syncCustomerDeleteToCloud(custId).catch(err => console.warn('[Cloud Sync] Customer delete notice:', err));
   res.json({ success: true, message: 'Customer deleted' });
 });
 

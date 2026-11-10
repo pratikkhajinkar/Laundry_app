@@ -191,7 +191,8 @@ export async function syncCategoryToFirestore(category: Partial<ClothingCategory
       default_rate: Number(category.default_rate) || 0,
       unit: category.unit || 'piece',
       is_active: category.is_active ? 1 : 0,
-      sort_order: category.sort_order || 0
+      sort_order: category.sort_order || 0,
+      updated_at: (category as any).updated_at || new Date().toISOString()
     };
     await setDoc(docRef, payload, { merge: true });
     console.log(`[Firestore] Category ${category.id} synced successfully`);

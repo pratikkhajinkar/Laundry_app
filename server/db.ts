@@ -35,6 +35,71 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 export const dbPath = path.join(dataDir, 'laundry.db');
+
+function inspectDbStats(filePath: string): { valid: boolean; hasData: boolean } {
+  if (!fs.existsSync(filePath)) return { valid: false, hasData: false };
+  try {
+    const stat = fs.statSync(filePath);
+    if (stat.size < 4096) return { valid: false, hasData: false };
+    const testDb = new DatabaseSync(filePath, { readOnly: true });
+    try {
+      const integ = testDb.prepare('PRAGMA integrity_check').get() as { integrity_check?: string } | undefined;
+      if (!integ || integ.integrity_check !== 'ok') return { valid: false, hasData: false };
+      const usersTable = testDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+      if (!usersTable) return { valid: true, hasData: false };
+      const userCount = (testDb.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c || 0;
+      const orderCount = testDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'").get()
+        ? ((testDb.prepare('SELECT COUNT(*) as c FROM orders').get() as any)?.c || 0)
+        : 0;
+      const custCount = testDb.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'").get()
+        ? ((testDb.prepare('SELECT COUNT(*) as c FROM customers').get() as any)?.c || 0)
+        : 0;
+      return { valid: true, hasData: userCount > 0 || orderCount > 0 || custCount > 0 };
+    } finally {
+      testDb.close();
+    }
+  } catch {
+    return { valid: false, hasData: false };
+  }
+}
+
+function restorePrimaryDatabaseIfNeeded() {
+  const primaryStats = inspectDbStats(dbPath);
+  if (primaryStats.valid && primaryStats.hasData) {
+    return;
+  }
+
+  const candidates = [
+    path.join(dataDir, 'laundry_backup_safe.db'),
+    path.join(dataDir, 'laundry_backup.db')
+  ].filter(p => fs.existsSync(p));
+
+  let bestBackup: { path: string; mtimeMs: number } | null = null;
+  for (const cand of candidates) {
+    const stats = inspectDbStats(cand);
+    if (stats.valid && stats.hasData) {
+      const mtimeMs = fs.statSync(cand).mtimeMs;
+      if (!bestBackup || mtimeMs > bestBackup.mtimeMs) {
+        bestBackup = { path: cand, mtimeMs };
+      }
+    }
+  }
+
+  if (bestBackup) {
+    try {
+      for (const sidecar of [dbPath + '-wal', dbPath + '-shm']) {
+        if (fs.existsSync(sidecar)) fs.unlinkSync(sidecar);
+      }
+      fs.copyFileSync(bestBackup.path, dbPath);
+      console.log(`[Database Recovery] Restored primary database from ${path.basename(bestBackup.path)}`);
+    } catch (err) {
+      console.error('[Database Recovery] Failed to restore from backup:', err);
+    }
+  }
+}
+
+restorePrimaryDatabaseIfNeeded();
+
 export const db = new DatabaseSync(dbPath);
 
 // Enable foreign keys, WAL mode, and safe checkpoints for zero data loss
@@ -43,14 +108,76 @@ db.exec('PRAGMA journal_mode = WAL;');
 db.exec('PRAGMA synchronous = NORMAL;');
 db.exec('PRAGMA wal_autocheckpoint = 100;');
 
-export function backupDatabase() {
+function hasMeaningfulData(conn: DatabaseSync): boolean {
   try {
-    const backupPath = path.join(dataDir, 'laundry_backup.db');
-    const safeBackupPath = path.join(dataDir, 'laundry_backup_safe.db');
-    // Force a WAL checkpoint to flush all data to the main database file before copying
+    const usersTable = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='users'").get();
+    if (!usersTable) return false;
+    const u = (conn.prepare('SELECT COUNT(*) as c FROM users').get() as any)?.c || 0;
+    const o = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='orders'").get()
+      ? ((conn.prepare('SELECT COUNT(*) as c FROM orders').get() as any)?.c || 0)
+      : 0;
+    const c = conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='customers'").get()
+      ? ((conn.prepare('SELECT COUNT(*) as c FROM customers').get() as any)?.c || 0)
+      : 0;
+    return u > 0 || o > 0 || c > 0;
+  } catch {
+    return false;
+  }
+}
+
+export function backupDatabase() {
+  const backupPath = path.join(dataDir, 'laundry_backup.db');
+  const safeBackupPath = path.join(dataDir, 'laundry_backup_safe.db');
+  const tmpBackupPath = path.join(dataDir, 'laundry_backup.tmp.db');
+
+  try {
+    // Never overwrite a populated backup with an empty database
+    const currentHasData = hasMeaningfulData(db);
+    if (!currentHasData) {
+      const existingSafe = inspectDbStats(safeBackupPath);
+      const existingMain = inspectDbStats(backupPath);
+      if (existingSafe.hasData || existingMain.hasData) {
+        console.warn('[Database Backup] Skipped overwriting non-empty backup with empty primary DB.');
+        return;
+      }
+    }
+
+    // Force a WAL checkpoint to flush all data into main DB
     db.exec('PRAGMA wal_checkpoint(TRUNCATE);');
-    fs.copyFileSync(dbPath, backupPath);
-    fs.copyFileSync(dbPath, safeBackupPath);
+
+    // Create a clean single-file standalone (journal_mode=DELETE) snapshot with zero -wal/-shm sidecars
+    if (fs.existsSync(tmpBackupPath)) {
+      try { fs.unlinkSync(tmpBackupPath); } catch {}
+    }
+
+    let snapshotSource = dbPath;
+    try {
+      const escapedTmp = tmpBackupPath.replace(/'/g, "''");
+      db.exec(`VACUUM INTO '${escapedTmp}'`);
+      if (fs.existsSync(tmpBackupPath) && fs.statSync(tmpBackupPath).size >= 4096) {
+        snapshotSource = tmpBackupPath;
+      }
+    } catch {
+      // Fallback to checkpointed dbPath if VACUUM INTO fails
+    }
+
+    // Update each backup target independently so a file lock on one never blocks the other
+    for (const target of [safeBackupPath, backupPath]) {
+      try {
+        fs.copyFileSync(snapshotSource, target);
+        for (const sidecar of [target + '-wal', target + '-shm']) {
+          if (fs.existsSync(sidecar)) {
+            try { fs.unlinkSync(sidecar); } catch {}
+          }
+        }
+      } catch (targetErr) {
+        console.warn(`[Database Backup] Could not update ${path.basename(target)}:`, (targetErr as any)?.message || targetErr);
+      }
+    }
+
+    if (fs.existsSync(tmpBackupPath)) {
+      try { fs.unlinkSync(tmpBackupPath); } catch {}
+    }
   } catch (err) {
     console.error('Backup error:', err);
   }
@@ -104,7 +231,8 @@ export function initDatabase() {
       unit TEXT DEFAULT 'piece',
       is_active INTEGER DEFAULT 1,
       sort_order INTEGER DEFAULT 0,
-      created_at TEXT NOT NULL
+      created_at TEXT NOT NULL,
+      updated_at TEXT
     );
 
     CREATE TABLE IF NOT EXISTS deleted_category_tombstones (
@@ -346,6 +474,21 @@ export function runMigrations() {
   safeAddColumn('payment_transactions', 'recorded_by_user_id', 'TEXT');
   safeAddColumn('payment_transactions', 'recorded_by_name', 'TEXT');
   safeAddColumn('payment_transactions', 'is_credit_settlement', 'INTEGER DEFAULT 0');
+
+  // Clothing categories updated_at for safe bidirectional sync
+  safeAddColumn('clothing_categories', 'updated_at', 'TEXT');
+  try {
+    db.exec(`
+      UPDATE clothing_categories
+      SET updated_at = COALESCE(
+        (SELECT MAX(al.created_at) FROM audit_logs al WHERE al.entity_id = clothing_categories.id AND al.action IN ('UPDATE_CATEGORY', 'CREATE_CATEGORY')),
+        updated_at,
+        created_at
+      )
+      WHERE updated_at IS NULL
+         OR updated_at < COALESCE((SELECT MAX(al.created_at) FROM audit_logs al WHERE al.entity_id = clothing_categories.id AND al.action IN ('UPDATE_CATEGORY', 'CREATE_CATEGORY')), '');
+    `);
+  } catch {}
 }
 
 export function ensureDefaultShopsAndAreas() {

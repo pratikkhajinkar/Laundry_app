@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import { initDatabase, backupDatabase, uploadsDir } from './server/db.ts';
+import { initDatabase, backupDatabase, db, uploadsDir } from './server/db.ts';
 import { initNeonDatabase } from './server/neon.ts';
 import { apiRouter } from './server/routes.ts';
 import { rehydrateFromFirestore, pushAllToFirestore } from './server/firestoreService.ts';
@@ -113,18 +113,23 @@ async function startServer() {
     app.use(vite.middlewares);
   }
 
-  // Graceful shutdown handling to flush database WAL checkpoint
-  process.on('SIGTERM', () => {
-    console.log('SIGTERM received. Flushing database checkpoint...');
+  // Periodic safety WAL checkpoint & backup every 5 minutes
+  const backupInterval = setInterval(() => {
     backupDatabase();
-    process.exit(0);
-  });
+  }, 5 * 60 * 1000);
+  if (typeof backupInterval.unref === 'function') backupInterval.unref();
 
-  process.on('SIGINT', () => {
-    console.log('SIGINT received. Flushing database checkpoint...');
+  // Graceful shutdown handling to flush database WAL checkpoint and close cleanly
+  const gracefulShutdown = (signal: string) => {
+    console.log(`${signal} received. Flushing database checkpoint...`);
+    clearInterval(backupInterval);
     backupDatabase();
+    try { db.close(); } catch {}
     process.exit(0);
-  });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
   // Dynamic port binding with automatic fallback if port is in use
   function listenOnPort(portToTry: number) {
